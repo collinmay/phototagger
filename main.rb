@@ -1,4 +1,5 @@
 require "sinatra/base"
+require "sinatra/config_file"
 require "oauth2"
 require "haml"
 require "nokogiri"
@@ -8,16 +9,11 @@ require "faraday"
 require "faraday_middleware"
 require "byebug"
 
-require_relative "./config.rb"
-
 require_relative "./picasaweb.rb"
+require_relative "./imgur.rb"
 
-DB = Sequel.connect("mysql2://tagger:S6L52XKuqR56PGqZujM8z2pr@localhost/tagger")
-
-Sequel.extension :migration
-Sequel::Migrator.check_current(DB, "./migrations/")
-
-require_relative "./models.rb"
+require_relative "./exceptions.rb"
+require_relative "./grants.rb"
 
 PICASA_SCOPE = "https://picasaweb.google.com/data/"
 USERINFO_SCOPE = "https://www.googleapis.com/auth/userinfo.profile"
@@ -29,50 +25,72 @@ REDIRECT_POST_PHOTO_AUTH = "/app/debug/dump/session"
 SESSION_VERSION = 5
 
 class TaggerApp < Sinatra::Base
-  set :session_secret, "hEHObjgcVXIctzVq" # generated from random.org
-  
-  enable :sessions
+  register Sinatra::ConfigFile
 
-  set :oauth2_client, OAuth2::Client.new(G_API_CLIENT, G_API_SECRET, {
+  config_file "./config.yml"
+  DB = Sequel.connect(settings.db_path)
+  Sequel.extension :migration
+  if settings.test? then # automatically apply migrations for unit tests
+    Sequel::Migrator.run(DB, "migrations")
+    OmniAuth.config.test_mode = true
+  end
+  Sequel::Migrator.check_current(DB, "migrations")
+  require_relative "./models.rb"
+  
+  use Rack::Session::Cookie, :secret => "hEHObjgcVXIctzVq"  
+
+  set :oauth2_client, OAuth2::Client.new(settings.google_client_id, settings.google_client_secret, {
                                            :site => "https://accounts.google.com",
                                            :authorize_url => "/o/oauth2/auth",
                                            :token_url => "/o/oauth2/token"
                                          })
 
   set :imgur_conn, (Faraday.new(:url => "https://api.imgur.com") do |faraday|
-                      faraday.authorization("Client-ID", IMGUR_API_CLIENT)
+                      faraday.authorization("Client-ID", settings.imgur_api_client)
                       faraday.response :json, :content_type => /\bjson$/
                       faraday.adapter Faraday.default_adapter
                     end)
   
+  before "/app/debug/*" do
+    if session[:version] != SESSION_VERSION then
+      session.clear
+      session[:version] = SESSION_VERSION
+    end
+
+    if !session[:user_id] then
+      redirect "/auth/google/userinfo"
+    end
+
+    @grant = DebugGrant.new(session)
+  end
+
   helpers do
-    def session_sane
-      if session[:version] != SESSION_VERSION then
-        redirect "/auth/google/userinfo"
-        return
-      end
+    def grant
+      @grant ||= CookieGrant.new(session)
     end
-
-    def get_identity
-      if session[:version] != SESSION_VERSION then
-        session.clear
+    
+    def user
+      if @user && grant.grants_generic_access?(@user) then
+        return @user
       end
-
-      if session[:user_id] then
-        return User[:id => session[:user_id]]
+      
+      if !params[:user] || params[:user] == "me" then
+        if grant.default_user then
+          @user = grant.default_user
+        else
+          raise NoDefaultUserGrantedError.new(@user)
+        end
       else
-        halt 501, "NYI"
+        @user = User[:id => params[:user].to_i]
+        if @user == nil then
+          raise NoSuchObjectExistsError.new(:user, params[:user].to_i)
+        end
+        if !grant.grants_generic_access?(@user) then
+          raise AccessDeniedError.new(@grant, @user)
+        end
       end
-    end
 
-    def ensure_authorization
-      user = get_identity
-      if params[:user] == "me" || params[:user].to_i == user.id then
-        return user
-      else
-        content_type :json
-        halt 401, {:status => :error, :reason => :not_authorized, :message => "Not authorized."}.to_json
-      end
+      return @user
     end
     
     def get_gphotos_token
@@ -89,13 +107,6 @@ class TaggerApp < Sinatra::Base
       return token
     end
 
-    def create_user(google_id)
-      user = User.create(:google_id => session[:google_id])
-      untagged = Tag.create(:title => "Untagged")
-      untagger.user = user
-      return user
-    end
-    
     def import_imgur_image(user, image)
       photo = Photo.create(:provider => "imgur")
       imgur_photo = ImgurPhoto.create(:imgur_id => image["id"], :photo_id => photo.id, :fullres_url => image["link"])
@@ -121,11 +132,6 @@ class TaggerApp < Sinatra::Base
   get "/" do
     token = nil
 
-    if session[:version] != SESSION_VERSION then
-      redirect "/auth/google/userinfo"
-      next
-    end
-    
     if session[:userinfo_token] then
       token = OAuth2::AccessToken.from_hash(settings.oauth2_client, session[:userinfo_token])
       if token.expired? && token.refresh_token then

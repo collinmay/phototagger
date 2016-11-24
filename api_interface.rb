@@ -1,15 +1,12 @@
 class TaggerApp < Sinatra::Base
   get "/api/whoami" do
-    user = get_identity
-
     content_type :json
     {:status => :success,
+     :grant_type => grant.class.name,
      :google_id => user.google_id, :id => user.id}.to_json
   end
 
   get "/api/user/:user/photo/list" do
-    user = ensure_authorization
-
     content_type :json
     {:status => :success,
      :owner => user.id, :photos => user.photos.map do |photo|
@@ -23,8 +20,6 @@ class TaggerApp < Sinatra::Base
   end
 
   post "/api/user/:user/photo/" do
-    user = ensure_authorization
-
     content_type :json
     
     request.body.rewind

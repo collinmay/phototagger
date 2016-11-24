@@ -1,5 +1,6 @@
 source "https://rubygems.org"
 gem "sinatra"
+gem "sinatra-contrib"
 gem "oauth2"
 gem "haml"
 gem "nokogiri"
@@ -8,3 +9,12 @@ gem "sequel"
 gem "faraday"
 gem "faraday_middleware"
 gem "byebug"
+gem "sqlite3"
+gem "rake"
+gem "thin"
+
+group :test do
+  gem "rspec"
+  gem "rack-test"
+  gem "database_cleaner"
+end

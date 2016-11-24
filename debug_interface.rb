@@ -1,25 +1,15 @@
 class TaggerApp < Sinatra::Base
   get "/app/debug/dump/session" do
-    session_sane
     userinfo_token = OAuth2::AccessToken.from_hash(settings.oauth2_client, session[:userinfo_token]) rescue nil
     photos_token = OAuth2::AccessToken.from_hash(settings.oauth2_client, session[:photos_token]) rescue nil
     
     haml :debug_dump_info, :locals => {:session => session, :ui_tok => userinfo_token, :pho_tok => photos_token}
   end
 
-  get "/app/debug/dump/user/:user/" do |uid|
-    if uid == "me" then
-      session_sane
-      uid = session[:user_id]
-    end
-    user = User[:id => uid]
-    if user == nil then
-      next "No such user '#{uid}'"
-    end
-
+  get "/app/debug/dump/user/:user/" do
     haml :debug_dump_user_info, :locals => {:user => user}
   end
-  
+
   get "/app/debug/dump/photo/:photo/" do |photo_id|
     photo = Photo[:id => photo_id]
     if photo == nil then
