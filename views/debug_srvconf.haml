@@ -1,0 +1,14 @@
+%html
+  %head
+    %title
+      DEBUG: Server Configuration
+  %body
+    %a{:href => "/app/debug/"}
+      Main Debug Menu
+    %table
+      -config.each_pair do |key, value|
+        %tr
+          %td
+            =key
+          %td
+            =value

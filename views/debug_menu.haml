@@ -1,0 +1,57 @@
+%html
+  %head
+    %title
+      DEBUG: Main Menu
+  %body
+    %ul
+      %li
+        User Info
+        %ul
+          %li
+            %a{:href => "/app/debug/dump/session"}
+              Dump Session Info
+          %li
+            %a{:href => "/app/debug/dump/user/me/"}
+              Dump User Info
+      %li
+        User Actions
+        %ul
+          %li
+            %a{:href => "/app/debug/import/gphotos/"}
+              Import Photos From Google Photos
+          %li
+            %form{:method => "GET", :action => "/app/debug/import/imgur/favorites"}
+              %input{:type => "text", :name => "username", :placeholder => "imgur username"}
+              %input{:type => "submit", :value => "Import Favorites From Imgur"}
+          %li
+            %form{:method => "GET", :action => "/app/debug/import/imgur/photo"}
+              %input{:type => "text", :name => "link", :placeholder => "imgur link"}
+              %input{:type => "submit", :value => "Import Photo/Album From Imgur"}
+          %li
+            %form{:method => "GET", :action => "/app/debug/create/tag"}
+              %input{:type => "text", :name => "name", :placeholder => "tag name"}
+              %input{:type => "submit", :value => "Create Tag"}
+      %li
+        Database Debugging
+        %ul
+          %li
+            %a{:href => "/app/debug/db/stats"}
+              Global DB stats
+          %li
+            Inspections
+            %ul
+              %li
+                %a{:href => "/app/debug/db/inspections/users"}
+                  Users
+              %li
+                %a{:href => "/app/debug/db/inspections/photos"}
+                  Photos
+          %li
+            %a{:href => "/app/debug/db/purge/bad/confirm"}
+              Purge Bad Records
+      %li
+        %a{:href => "/app/debug/server/config"}
+          Server Configuration
+      %li
+        %a{:href => "/app/debug/logout"}
+          Log out

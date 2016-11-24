@@ -1,0 +1,18 @@
+%html
+  %head
+    %title
+      DEBUG: DB Stats
+  %body
+    %a{:href => "/app/debug/"}
+      Main Debug Menu
+    %table
+      %tr
+        %td
+          User Count
+        %td
+          =db[:users].count
+      %tr
+        %td
+          Photo Count
+        %td
+          =db[:photos].count

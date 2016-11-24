@@ -1,0 +1,49 @@
+%html
+  %head
+    %title
+      DEBUG: DB Inspections > Photos
+    %link{:href => "https://xenotoad.net/css/tables.css", :rel => "stylesheet", :type => "text/css"}
+  %body
+    %a{:href => "/app/debug/"}
+      Main Debug Menu
+    %table
+      %thead
+        %tr
+          %td
+            Photo ID
+          %td
+            Owner ID
+          %td
+            Provider
+          %td
+            Provider ID
+          %td
+            Info
+          %td
+            Delete
+          %td
+            Errors
+      %tbody
+        -photos.each do |photo|
+          %tr{:class => photo.id == highlight_id ? "highlight" : nil}
+            %td
+              =photo.id
+            %td
+              %a{:href => "/app/debug/dump/user/#{photo.user_id}/"}
+                =photo.user_id
+            %td
+              =photo.provider
+            %td
+              =photo.provider_id
+            %td
+              %a{:href => "/app/debug/dump/photo/#{photo.id}/"}
+                More Info
+            %td
+              %a{:href => "/app/debug/delete/photo/#{photo.id}"}
+                Delete
+            %td
+              =photo.error_check.first
+    %a{:href => "?min=#{min-range}&max=#{min}"}
+      Previous
+    %a{:href => "?min=#{max}&max=#{max+range}"}
+      Next

@@ -1,0 +1,44 @@
+%html
+  %head
+    %title
+      DEBUG: User Info For
+      =user.id
+    %link{:href => "https://xenotoad.net/css/tables.css", :rel => "stylesheet", :type => "text/css"}
+  %body
+    %h1
+      User Info For
+      =user.id
+    %p
+      %a{:href => "/app/debug/"}
+        Main Debug Menu
+    %p
+      %a{:href => "/app/debug/db/inspections/users?min=#{(user.id/20).floor*20}&max=#{(user.id/20).floor*20+20}&highlight=#{user.id}"}
+        Show in inspection
+
+    %p
+      Owned Photos:
+    %table
+      %thead
+        %td
+          Photo Id
+        %td
+          Provider
+        %td
+          Provider ID
+        %td
+        %td
+      %tbody
+        -user.photos.each do |photo|
+          %tr
+            %td
+              =photo.id
+            %td
+              =photo.provider
+            %td
+              =photo.provider_id
+            %td
+              %a{:href => "/app/debug/dump/photo/#{photo.id}/"}
+                More Info
+            %td
+              %a{:href => "/app/debug/db/inspections/photos?id=#{photo.id}"}
+                Inspect

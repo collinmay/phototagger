@@ -1,0 +1,42 @@
+%html
+  %head
+    %title
+      DEBUG: Photo Info For
+      =photo.id
+  %body
+    %h1
+      Photo Info For
+      =photo.id
+    %p
+      %a{:href => "/app/debug/"}
+        Main Debug Menu
+    %p
+      %a{:href => "/app/debug/db/inspections/photos?id=#{photo.id}"}
+        Show in inspection
+    %p
+      %a{:href => "/app/debug/dump/photo/#{photo.id-1}/"}
+        Previous
+      %a{:href => "/app/debug/dump/photo/#{photo.id+1}/"}
+        Next
+
+    %p
+      Provider:
+      =photo.provider
+    %p
+      Owner ID:
+      %a{:href => "/app/debug/dump/user/#{photo.user_id}/"}
+        =photo.user_id
+    %p
+      ID:
+      =photo.provider_id
+    %p
+      Fullres URL:
+      =photo.fullres_url
+    %p
+      %img{:src => photo.fullres_url}
+    %p
+      Errors:
+      %ol
+        -photo.error_check.each do |error|
+          %li
+            =error

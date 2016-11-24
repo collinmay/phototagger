@@ -1,0 +1,11 @@
+!
+%html
+  %head
+    %title
+      Album Listing
+  %body
+    %ul
+      -albums.each do |album|
+        %li
+          %a{:href => "/list/photos/#{album.id}/"}
+            =album.title

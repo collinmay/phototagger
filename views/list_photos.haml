@@ -1,0 +1,12 @@
+!
+%html
+  %head
+    %title
+      Photo Listing
+  %body
+    %ul
+      -photos.each do |photo|
+        %li
+          %img{:src => photo.thumbnails.min { |a, b| a.width <=> b.width }.url}
+          %p
+            =photo.title

@@ -1,0 +1,17 @@
+%html
+  %head
+    %title
+      DEBUG: Choose Album to Import From Google Photos
+  %body
+    %ul
+      -albums.each do |album|
+        %li
+          %a{:href => "/app/debug/import/gphotos/#{album.id}"}
+            =album.title
+          %ul
+            %li
+              Number of photos:
+              =album.numphotos
+            %li
+              Access
+              =album.access

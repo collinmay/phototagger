@@ -1,0 +1,92 @@
+%html
+%head
+  %title
+    DEBUG: Info Dump
+%body
+  %a{:href => "/app/debug/"}
+    Main Debug Menu
+  %table
+    %tr
+      %td
+        Session Version
+      %td
+        =session[:version]
+    %tr
+      %td
+        User ID
+      %td
+        =session[:user_id]
+    %tr
+      %td
+        Google ID
+      %td
+        =session[:google_id]
+    %tr
+      %td
+        Google Name
+      %td
+        =session[:google_name]
+    %tr
+      %td
+        Google Picture
+      %td
+        %img{:src => session[:google_picture]}
+    %tr
+      %td
+        Has User Info Token?
+      %td
+        =(ui_tok != nil)
+    -if (ui_tok != nil)
+      %tr
+        %td
+          Token Expired?
+        %td
+          =ui_tok.expired?
+      %tr
+        %td
+          Time Left To Expiry
+        %td
+          =ui_tok.expires_at - Time.now.to_i
+      %tr
+        %td
+          Expires at
+        %td
+          =ui_tok.expires_at
+      %tr
+        %td
+          Token
+        %td
+          =ui_tok.token
+      %tr
+        %td
+          Refresh Token
+        %td
+          =ui_tok.refresh_token
+    %tr
+      %td
+        Has Google Photos Token?
+      %td
+        %a{:href => "/auth/google/photos"}
+          =(pho_tok != nil)
+    -if (pho_tok != nil)
+      %tr
+        %td
+          Token Expired?
+        %td
+          =pho_tok.expired?
+      %tr
+        %td
+          Time Left To Expiry
+        %td
+          =pho_tok.expires_at - Time.now.to_i
+  %a{:href => "/"}
+    Back home.
+  %br
+  %a{:href => "/app/debug/logout"}
+    Log out.
+  %br
+  %a{:href => "/app/debug/userinfo_tok_refresh"}
+    Attempt user info token refresh.
+  %br
+  %a{:href => "/app/debug/dump/user/#{session[:user_id]}/"}
+    Dump user info.

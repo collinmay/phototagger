@@ -1,0 +1,30 @@
+%html
+  %head
+    %title
+      DEBUG: DB Inspections > Users
+    %link{:href => "https://xenotoad.net/css/tables.css", :rel => "stylesheet", :type => "text/css"}
+  %body
+    %a{:href => "/app/debug/"}
+      Main Debug Menu
+    %table
+      %thead
+        %tr
+          %td
+            User ID
+          %td
+            Google ID
+          %td
+      %tbody
+        -users.each do |user|
+          %tr{:class => user.id == highlight_id ? "highlight" : nil}
+            %td
+              =user.id
+            %td
+              =user.google_id
+            %td
+              %a{:href => "/app/debug/dump/user/#{user.id}/"}
+                More Info
+    %a{:href => "?min=#{min-range}&max=#{min}"}
+      Previous
+    %a{:href => "?min=#{max}&max=#{max+range}"}
+      Next

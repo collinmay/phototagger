@@ -1,0 +1,126 @@
+require "sequel"
+require_relative "utils.rb"
+
+class User < Sequel::Model
+  one_to_many :tags
+  one_to_many :photos
+end
+User.unrestrict_primary_key
+
+class Tag < Sequel::Model
+  many_to_many :photos
+  many_to_one :user
+end
+
+class Photo < Sequel::Model
+  one_to_one :google_photo
+  one_to_one :imgur_photo
+  many_to_many :tags
+
+  def provider_id
+    case provider
+    when "imgur"
+      return imgur_photo ? imgur_photo.imgur_id : nil
+    when "gphotos"
+      return google_photo ? google_photo.google_id : nil
+    else
+      return nil
+    end
+  end
+
+  def fullres_url
+    case provider
+    when "imgur"
+      return imgur_photo.fullres_url
+    when "gphotos"
+      return google_photo.fullres_url
+    else
+      return nil
+    end
+  end
+  
+  def error_check
+    errors = []
+
+    begin
+      case provider
+      when "imgur"
+        if imgur_photo == nil then
+          errors.push "No associated imgur photo"
+        else
+          errors.concat(imgur_photo.error_check)
+        end
+      when "gphotos"
+        if google_photo == nil then
+          errors.push "No associated google photo"
+        else
+          errors.concat(google_photo.error_check)
+        end
+      else
+        errors.push "Unknown provider '" + provider
+      end
+    rescue => e
+      errors.push e
+    end
+
+    return errors
+  end
+end
+
+class GooglePhoto < Sequel::Model
+  many_to_one :photo
+
+  def error_check
+    errors = []
+    
+    if photo == nil then
+      errors.push "No associated photo"
+    end
+
+    if google_id == nil then
+      errors.push "No associated google ID"
+    end
+
+    if google_id.to_s == 0 then
+      if google_id == "0" then
+        errors.push "Google ID is zero"
+      else
+        errors.push "Google ID is not a number"
+      end
+    end
+
+    if !valid_uri?(fullres_url)
+      errors.push "Full res URL is not a valid URL (" + fullres_url.inspect + ")"
+    end
+
+    if !valid_uri?(largethumb_url) then
+      errors.push "Large thumbnail URL is not a valid URL (" + largethumb_url.inspect + ")"
+    end
+
+    return errors
+  end
+end
+GooglePhoto.unrestrict_primary_key
+
+class ImgurPhoto < Sequel::Model
+  many_to_one :photo
+
+  def error_check
+    errors = []
+
+    if photo == nil then
+      errors.push "No associated photo"
+    end
+
+    if imgur_id.length != 7 then
+      errors.push "Imgur ID is not 7 characters long"
+    end
+
+    if !valid_uri?(fullres_url) then
+      errors.push "Full res URL is not a valid URL (" + fullres_url.inspect + ")"
+    end
+    
+    return errors
+  end
+end
+ImgurPhoto.unrestrict_primary_key

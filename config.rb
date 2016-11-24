@@ -1,0 +1,8 @@
+G_API_CLIENT = "742691585697-16bnob96s6vs68vgnajknrj0urleim7i.apps.googleusercontent.com"
+G_API_SECRET = "2cYQ7RTmz-SnoST6owNaNjMS"
+
+IMGUR_API_CLIENT = "b214341a858a3de"
+IMGUR_API_SECRET = "e1ba5f8b172d75d6017f086d809c96c530a03699"
+
+ALLOW_HOTLINKS = true
+ALLOW_UPLOADS = true
