@@ -14,7 +14,7 @@ Sequel.migration do
       add_column :fullres_url, String, :fixed => true, :length => 128
     end
 
-    DB[:imgur_photos].all do |row|
+    TaggerApp::DB[:imgur_photos].all do |row|
       if row[:imgur_id].is_a? String then
         json = imgur.get("/3/image/#{row[:imgur_id]}").body
         if !json["success"] then
@@ -22,7 +22,7 @@ Sequel.migration do
           next
         end
         
-        DB[:imgur_photos].where("photo_id = ?", row[:photo_id]).update(:fullres_url => json["data"]["link"])
+        TaggerApp::DB[:imgur_photos].where("photo_id = ?", row[:photo_id]).update(:fullres_url => json["data"]["link"])
       end
     end
   end

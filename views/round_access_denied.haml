@@ -1,0 +1,17 @@
+%html.error-page{:lang => "en"}
+  =haml :bootstrap_crud
+  %link{:rel => "stylesheet", :href => "/errorpage.css"}
+  %title
+    Access Denied
+  .container-fluid
+    .row-fluid
+      .col-lg-12
+        .centering.vertical-center.error-container
+          .text-xs-center
+            %h2.without-margin
+              Error
+              %span.text-warning
+                %big
+                  403
+            %h4.text-warning
+              Access denied.

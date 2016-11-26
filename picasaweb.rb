@@ -46,7 +46,9 @@ module PicasaWeb
       @height = node.at_xpath("./gphoto:height").content.to_i
       @size = node.at_xpath("./gphoto:size").content.to_i
       mg = node.at_xpath("./media:group")
-      @fullsize = MediaImage.new(mg.at_xpath("./media:content"), :content)
+      @fullsize = mg.at_xpath("./media:content").map do |mc|
+        MediaImage.new(mc, :content)
+      end.max { |a,b| a.width <=> b.width}
       @thumbnails = mg.xpath("./media:thumbnail").map do |mt|
         MediaImage.new(mt, :thumbnail)
       end

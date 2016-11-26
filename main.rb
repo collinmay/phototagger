@@ -1,5 +1,6 @@
 require "sinatra/base"
 require "sinatra/config_file"
+require "sinatra/partial"
 require "oauth2"
 require "haml"
 require "nokogiri"
@@ -18,21 +19,20 @@ require_relative "./grants.rb"
 PICASA_SCOPE = "https://picasaweb.google.com/data/"
 USERINFO_SCOPE = "https://www.googleapis.com/auth/userinfo.profile"
 
-REDIRECT_NEW_USER = "/app/debug/dump/session"
-REDIRECT_RETURNING_USER = "/app/debug/dump/session"
-REDIRECT_POST_PHOTO_AUTH = "/app/debug/dump/session"
+REDIRECT_NEW_USER = "/app/round/"
+REDIRECT_RETURNING_USER = "/app/round/"
 
 SESSION_VERSION = 5
 
 class TaggerApp < Sinatra::Base
   register Sinatra::ConfigFile
-
+  register Sinatra::Partial
+  
   config_file "./config.yml"
   DB = Sequel.connect(settings.db_path)
   Sequel.extension :migration
   if settings.test? then # automatically apply migrations for unit tests
     Sequel::Migrator.run(DB, "migrations")
-    OmniAuth.config.test_mode = true
   end
   Sequel::Migrator.check_current(DB, "migrations")
   require_relative "./models.rb"
@@ -62,6 +62,10 @@ class TaggerApp < Sinatra::Base
     end
 
     @grant = DebugGrant.new(session)
+  end
+
+  before do
+    request.env["grant"] = grant
   end
 
   helpers do
@@ -168,9 +172,12 @@ class TaggerApp < Sinatra::Base
       "Debug features only available in development mode."
     end
   end  
+
+  require_relative "./round_interface.rb"
   
   get "/app/" do
-    
+    user # ensure logged in
+    haml :app_root
   end
 
   def redirect_uri

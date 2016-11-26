@@ -38,6 +38,15 @@ class Photo < Sequel::Model
       return nil
     end
   end
+
+  def thumbnail_url
+    case provider
+    when "imgur"
+      return imgur_photo.thumbnail_url
+    when "gphotos"
+      return google_photo.thumbnail_url
+    end
+  end
   
   def error_check
     errors = []
@@ -99,6 +108,10 @@ class GooglePhoto < Sequel::Model
 
     return errors
   end
+
+  def thumbnail_url
+    largethumb_url
+  end
 end
 GooglePhoto.unrestrict_primary_key
 
@@ -121,6 +134,11 @@ class ImgurPhoto < Sequel::Model
     end
     
     return errors
+  end
+
+  def thumbnail_url
+    i = fullres_url.rindex(".")
+    return fullres_url[0, i] + "b" + fullres_url[i, fullres_url.length]
   end
 end
 ImgurPhoto.unrestrict_primary_key

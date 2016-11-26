@@ -1,0 +1,13 @@
+%html
+  =haml :bootstrap_crud
+  %link{:rel => "stylesheet", :href => "/gallery.css"}
+  %title
+    Gallery
+  .gallery-grid
+    -user.photos.each do |photo|
+      .gallery-photo-container
+        .gallery-photo-growbox
+          .gallery-photo-iconbox
+            %img.gallery-photo-icon{:src => "/#{photo.provider}_material.svg"}
+          .gallery-photo-centerbox
+            %img.gallery-photo{:src => photo.thumbnail_url}

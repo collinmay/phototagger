@@ -1,0 +1,21 @@
+%html.error-page{:lang => "en"}
+  =haml :bootstrap_crud
+  %link{:rel => "stylesheet", :href => "/errorpage.css"}
+  %title
+    Resource Not Found
+  .container-fluid
+    .row-fluid
+      .col-lg-12
+        .centering.vertical-center.error-container
+          .text-xs-center
+            %h2.without-margin
+              Error
+              %span.text-danger
+                %big
+                  404
+            %h4
+              %span.text-danger
+                Not found.
+              %a{:href => "javascript:history.back()"}
+                Go back?
+              

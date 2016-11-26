@@ -17,8 +17,12 @@ task :migrate, [:version] do |t, args|
     puts "Migrating to version #{args[:version]}"
     Sequel::Migrator.run(db, "migrations", target => args[:version].to_i)
   else
-    puts "Migrating to latest"
-    Sequel::Migrator.run(db, "migrations")
+    if Sequel::Migrator.is_current?(db, "migrations") then
+      puts "No migrations necessary"
+    else
+      puts "Migrating to latest"
+      Sequel::Migrator.run(db, "migrations")
+    end
   end
 end
 
