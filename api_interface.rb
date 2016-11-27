@@ -9,13 +9,9 @@ class TaggerApp < Sinatra::Base
   get "/api/user/:user/photo/list" do
     content_type :json
     {:status => :success,
-     :owner => user.id, :photos => user.photos.map do |photo|
-       {
-         :id => photo.id,
-         :provider => photo.provider,
-         :provider_id => photo.provider_id,
-         :fullres_url => photo.fullres_url
-       }
+     :owner => user.id,
+     :photos => user.photos.map do |photo|
+       photo.to_hash
      end}.to_json
   end
 
@@ -48,9 +44,16 @@ class TaggerApp < Sinatra::Base
             :foreign_error => imgur_json
           }.to_json
         else
-          import_imgur_image(user, json["data"])
+          photo = import_imgur_image(user, json["data"])
+          status 200
+          next {:status => :success, :photo => photo.to_hash}.to_json
         end
       when "gphotos"
+        status 500 # TODO
+        next {
+          :status => :error,
+          :reason => "NYI"
+        }.to_json
       else
         status 400
         next {
@@ -61,7 +64,7 @@ class TaggerApp < Sinatra::Base
           :bad_field => "provider",
           :bad_value => data["provider"],
           :message => "Malformed request: unknown provider '#{data["provider"]}'."
-        }
+        }.to_json
       end
     else
       status 400

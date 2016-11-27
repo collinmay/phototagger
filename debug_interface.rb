@@ -20,7 +20,6 @@ class TaggerApp < Sinatra::Base
   end
   
   get "/app/debug/import/gphotos/" do
-    session_sane
     tok = get_gphotos_token
 
     albums = PicasaWeb::list_albums(tok)
@@ -28,10 +27,8 @@ class TaggerApp < Sinatra::Base
   end
 
   get "/app/debug/import/gphotos/:albumid" do |albumid|
-    session_sane
+    user # verify stuff
     tok = get_gphotos_token
-
-    user = User[:id => session[:user_id]]
     
     photos = PicasaWeb::list_photos(tok, albumid)
     photos.each do |photo|
@@ -43,10 +40,6 @@ class TaggerApp < Sinatra::Base
 
   get "/app/debug/import/imgur/favorites" do
     username = params[:username]
-
-    session_sane
-
-    user = User[:id => session[:user_id]]
     
     json = settings.imgur_conn.get("/3/account/#{Faraday::Utils.escape(username)}/gallery_favorites").body
     if !json["success"] then
@@ -68,10 +61,7 @@ class TaggerApp < Sinatra::Base
     next "suc cess"
   end
 
-  get "/app/debug/import/imgur/photo" do
-    session_sane
-    user = User[:id => session[:user_id]]
-    
+  get "/app/debug/import/imgur/photo" do   
     regex = /\A(?:(?:https?:\/\/)?(?:i.)?imgur.com\/(?:gallery\/)?)?([a-zA-Z0-9]{5,7})(?:.[a-z0-9]{3,4})?\Z/
     m = regex.match(params[:link])
     if m then
@@ -105,7 +95,6 @@ class TaggerApp < Sinatra::Base
   end
   
   get "/app/debug/userinfo_tok_refresh" do
-    session_sane
     userinfo_token = OAuth2::AccessToken.from_hash(settings.oauth2_client, session[:userinfo_token])
     userinfo_token.refresh!
     session[:userinfo_token] = userinfo_token.to_hash

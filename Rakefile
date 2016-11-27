@@ -1,6 +1,6 @@
 #require "rakeup"
 
-task default: [:migrate, :run]
+task default: [:migrate, :webpack, :run]
 
 task :run do
   system("bundle exec rackup")
@@ -23,6 +23,12 @@ task :migrate, [:version] do |t, args|
       puts "Migrating to latest"
       Sequel::Migrator.run(db, "migrations")
     end
+  end
+end
+
+task :webpack do
+  Dir.chdir "frontend" do
+    system("webpack")
   end
 end
 

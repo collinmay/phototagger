@@ -17,6 +17,16 @@ class Photo < Sequel::Model
   one_to_one :imgur_photo
   many_to_many :tags
 
+  def to_hash
+    {
+      :id => id,
+      :provider => provider,
+      :provider_id => provider_id,
+      :fullres_url => fullres_url,
+      :thumbnail_url => thumbnail_url
+    }
+  end
+  
   def provider_id
     case provider
     when "imgur"

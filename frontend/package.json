@@ -1,0 +1,30 @@
+{
+  "name": "phototagger",
+  "version": "1.0.0",
+  "description": "Photo Tagging Web App",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "author": "Collin May",
+  "license": "MIT",
+  "devDependencies": {
+    "babel": "^6.5.2",
+    "babel-core": "^6.18.2",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.18.0",
+    "expose-loader": "^0.7.1",
+    "webpack": "^1.13.1"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.16.0",
+    "co": "^4.6.0",
+    "react": "^15.4.1",
+    "react-dom": "^15.4.1"
+  }
+}
