@@ -8184,30 +8184,37 @@
 	
 	var _gallery = __webpack_require__(301);
 	
-	var _photoInspector = __webpack_require__(302);
+	var _photoInspector = __webpack_require__(303);
 	
-	var _co = __webpack_require__(303);
+	var _application = __webpack_require__(305);
+	
+	var _co = __webpack_require__(302);
 	
 	var _co2 = _interopRequireDefault(_co);
+	
+	var _tween = __webpack_require__(306);
+	
+	var TWEEN = _interopRequireWildcard(_tween);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	window.onload = function () {
-	  var galleryGrid = document.getElementById("gallery-grid");
-	  var photoInspectorContainer = document.getElementById("photo-inspector-container");
+	  if (history.state) {
+	    currentState = history.state; //overrides
+	  }
 	
-	  var activateInspector = function activateInspector(photo) {
-	    photoInspectorContainer.className = "tab active";
-	    history.pushState({
-	      view: "photo",
-	      photoId: photo.id
-	    }, "Photo", "/app/round/photo/" + photo.id);
+	  var asm = window.appStateMachine = new _application.AppStateMachine(currentState);
+	
+	  window.onpopstate = function (e) {
+	    asm.transitionState(e.state || asm.defaultState());
 	  };
 	
 	  var backend = new _backend.BackendInterface();
 	
 	  (0, _co2.default)(regeneratorRuntime.mark(function _callee() {
-	    var me, photos, gallery;
+	    var me, photos, gallery, photoInspector;
 	    return regeneratorRuntime.wrap(function _callee$(_context) {
 	      while (1) {
 	        switch (_context.prev = _context.next) {
@@ -8222,9 +8229,13 @@
 	
 	          case 5:
 	            photos = _context.sent;
-	            gallery = new _gallery.Gallery(galleryGrid, photos, activateInspector);
+	            gallery = new _gallery.Gallery(asm, photos);
+	            photoInspector = new _photoInspector.PhotoInspector(asm);
 	
-	          case 7:
+	            asm.addComponent(gallery);
+	            asm.addComponent(photoInspector);
+	
+	          case 10:
 	          case "end":
 	            return _context.stop();
 	        }
@@ -8233,7 +8244,11 @@
 	  }));
 	};
 	
-	window.onpopstate = function (evt) {};
+	function animate(t) {
+	  TWEEN.update(t);
+	  requestAnimationFrame(animate);
+	}
+	requestAnimationFrame(animate);
 
 /***/ },
 /* 299 */
@@ -8303,19 +8318,27 @@
 	          throw "owner mismatch";
 	        }
 	
-	        return json.photos.map(function (photo) {
-	          return new _models.Photo(_this2, photo.id, user, photo.provider, photo.provider_id, photo.fullres_url, photo.thumbnail_url);
-	        });
+	        return Promise.all(json.photos.map(function (photo) {
+	          return _models.Photo.fromJson(_this2, photo);
+	        }));
+	      });
+	    }
+	  }, {
+	    key: "getPhoto",
+	    value: function getPhoto(photoId) {
+	      var _this3 = this;
+	
+	      return this.rq.get("/api/photo/" + photoId).then(function (json) {
+	        return _models.Photo.fromJson(_this3, json.photo);
 	      });
 	    }
 	  }, {
 	    key: "postPhoto",
 	    value: function postPhoto(user, photo) {
-	      var _this3 = this;
+	      var _this4 = this;
 	
 	      return this.rq.post("/api/user/" + user.id + "/photo/", { provider: photo.provider, provider_id: photo.providerId }).then(function (json) {
-	        jp = json.photo;
-	        return new _models.Photo(_this3, jp.id, user, jp.provider, jp.provider_id, jp.fullres_url, jp.thumbnail_url);
+	        return _models.Photo.fromJson(_this4, json.photo);
 	      });
 	    }
 	  }]);
@@ -8337,6 +8360,9 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	var knownPhotos = {};
+	var knownUsers = {};
+	
 	var User = exports.User = function () {
 	  function User(iface, id, googleId, grantType) {
 	    _classCallCheck(this, User);
@@ -8345,6 +8371,7 @@
 	    this.id = id;
 	    this.googleId = googleId;
 	    this.grantType = grantType;
+	    knownUsers[id] = this;
 	  }
 	
 	  _createClass(User, [{
@@ -8357,13 +8384,22 @@
 	    value: function postPhoto(photo) {
 	      return this.iface.postPhoto(this, photo);
 	    }
+	  }], [{
+	    key: "byId",
+	    value: function byId(id) {
+	      if (knownUsers[id]) {
+	        return Promise.resolve(knownUsers[id]);
+	      } else {
+	        return this.iface.getUser(id);
+	      }
+	    }
 	  }]);
 	
 	  return User;
 	}();
 	
 	var Photo = exports.Photo = function () {
-	  function Photo(iface, id, owner, provider, providerId, fullresUrl, thumbnailUrl) {
+	  function Photo(iface, id, owner, provider, providerId, fullresUrl, thumbnailUrl, isVideo) {
 	    _classCallCheck(this, Photo);
 	
 	    this.iface = iface;
@@ -8373,12 +8409,30 @@
 	    this.providerId = providerId;
 	    this.fullresUrl = fullresUrl;
 	    this.thumbnailUrl = thumbnailUrl;
+	    this.isVideo = isVideo;
+	    knownPhotos[id] = this;
 	  }
 	
 	  _createClass(Photo, [{
 	    key: "save",
 	    value: function save() {
 	      return this.owner.postPhoto(this);
+	    }
+	  }], [{
+	    key: "byId",
+	    value: function byId(id) {
+	      if (knownPhotos[id]) {
+	        return Promise.resolve(knownPhotos[id]);
+	      } else {
+	        return this.iface.getPhoto(id);
+	      }
+	    }
+	  }, {
+	    key: "fromJson",
+	    value: function fromJson(iface, photo) {
+	      return User.byId(photo.user).then(function (user) {
+	        return new Photo(iface, photo.id, user, photo.provider, photo.provider_id, photo.fullres_url, photo.thumbnail_url, photo.is_video);
+	      });
 	    }
 	  }]);
 
@@ -8396,7 +8450,9 @@
 	});
 	exports.Gallery = undefined;
 	
-	var _co = __webpack_require__(303);
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _co = __webpack_require__(302);
 	
 	var _co2 = _interopRequireDefault(_co);
 	
@@ -8420,123 +8476,127 @@
 	  });
 	};
 	
-	var Gallery = exports.Gallery = function Gallery(container, photos, activateInspector) {
-	  _classCallCheck(this, Gallery);
+	var Gallery = exports.Gallery = function () {
+	  function Gallery(asm, photos) {
+	    _classCallCheck(this, Gallery);
 	
-	  var domTrees = [];
+	    var container = document.getElementById("gallery-grid");
+	    var domTrees = [];
 	
-	  var _loop = function _loop(i) {
-	    var photoContainer = document.createElement("div");
-	    var photoGrowbox = document.createElement("div");
-	    var photoIconbox = document.createElement("div");
-	    var providerIcon = document.createElement("img");
-	    var photoCenterbox = document.createElement("div");
+	    var _loop = function _loop(i) {
+	      var photoContainer = document.createElement("div");
+	      var photoGrowbox = document.createElement("div");
+	      var photoIconbox = document.createElement("div");
+	      var providerIcon = document.createElement("img");
+	      var photoCenterbox = document.createElement("div");
 	
-	    photoContainer.className = "gallery-photo-container";
-	    photoGrowbox.className = "gallery-photo-growbox initial";
-	    photoIconbox.className = "gallery-photo-iconbox";
-	    providerIcon.src = "/" + photos[i].provider + "_material.svg";
-	    providerIcon.className = "gallery-photo-icon";
-	    photoCenterbox.className = "gallery-photo-centerbox";
+	      photoContainer.className = "gallery-photo-container";
+	      photoGrowbox.className = "gallery-photo-growbox initial";
+	      photoIconbox.className = "gallery-photo-iconbox";
+	      providerIcon.src = "/" + photos[i].provider + "_material.svg";
+	      providerIcon.className = "gallery-photo-icon";
+	      photoCenterbox.className = "gallery-photo-centerbox";
 	
-	    photoIconbox.appendChild(providerIcon);
-	    photoGrowbox.appendChild(photoIconbox);
-	    photoGrowbox.appendChild(photoCenterbox);
-	    photoContainer.appendChild(photoGrowbox);
-	    container.appendChild(photoContainer);
+	      photoIconbox.appendChild(providerIcon);
+	      photoGrowbox.appendChild(photoIconbox);
+	      photoGrowbox.appendChild(photoCenterbox);
+	      photoContainer.appendChild(photoGrowbox);
+	      container.appendChild(photoContainer);
 	
-	    photoGrowbox.addEventListener("click", function (evt) {
-	      activateInspector(photos[i]);
-	    });
+	      photoGrowbox.addEventListener("click", function (evt) {
+	        asm.transitionState({
+	          view: "photo",
+	          photoId: photos[i].id
+	        });
+	      });
 	
-	    domTrees[i] = {
-	      photoGrowbox: photoGrowbox, photoCenterbox: photoCenterbox
+	      domTrees[i] = {
+	        photoGrowbox: photoGrowbox, photoCenterbox: photoCenterbox
+	      };
 	    };
-	  };
 	
-	  for (var i = 0; i < photos.length; i++) {
-	    _loop(i);
+	    for (var i = 0; i < photos.length; i++) {
+	      _loop(i);
+	    }
+	
+	    (0, _co2.default)(regeneratorRuntime.mark(function _callee() {
+	      var _this = this;
+	
+	      var _loop2, _i;
+	
+	      return regeneratorRuntime.wrap(function _callee$(_context2) {
+	        while (1) {
+	          switch (_context2.prev = _context2.next) {
+	            case 0:
+	              _loop2 = regeneratorRuntime.mark(function _loop2(_i) {
+	                var photo;
+	                return regeneratorRuntime.wrap(function _loop2$(_context) {
+	                  while (1) {
+	                    switch (_context.prev = _context.next) {
+	                      case 0:
+	                        photo = photos[_i];
+	
+	                        newImage(photo.thumbnailUrl).then(function (img) {
+	                          var domTree = domTrees[_i];
+	                          img.className = "gallery-photo";
+	                          domTree.photoCenterbox.appendChild(img);
+	
+	                          setTimeout(function () {
+	                            domTree.photoGrowbox.className = "gallery-photo-growbox";
+	                          }, 10);
+	                        });
+	
+	                        _context.next = 4;
+	                        return delay(1);
+	
+	                      case 4:
+	                      case "end":
+	                        return _context.stop();
+	                    }
+	                  }
+	                }, _loop2, _this);
+	              });
+	              _i = 0;
+	
+	            case 2:
+	              if (!(_i < Math.min(photos.length, 50))) {
+	                _context2.next = 7;
+	                break;
+	              }
+	
+	              return _context2.delegateYield(_loop2(_i), "t0", 4);
+	
+	            case 4:
+	              _i++;
+	              _context2.next = 2;
+	              break;
+	
+	            case 7:
+	            case "end":
+	              return _context2.stop();
+	          }
+	        }
+	      }, _callee, this);
+	    }));
 	  }
 	
-	  (0, _co2.default)(regeneratorRuntime.mark(function _callee() {
-	    var _this = this;
-	
-	    var _loop2, _i;
-	
-	    return regeneratorRuntime.wrap(function _callee$(_context2) {
-	      while (1) {
-	        switch (_context2.prev = _context2.next) {
-	          case 0:
-	            _loop2 = regeneratorRuntime.mark(function _loop2(_i) {
-	              var photo;
-	              return regeneratorRuntime.wrap(function _loop2$(_context) {
-	                while (1) {
-	                  switch (_context.prev = _context.next) {
-	                    case 0:
-	                      photo = photos[_i];
-	
-	                      newImage(photo.thumbnailUrl).then(function (img) {
-	                        var domTree = domTrees[_i];
-	                        img.className = "gallery-photo";
-	                        domTree.photoCenterbox.appendChild(img);
-	
-	                        setTimeout(function () {
-	                          domTree.photoGrowbox.className = "gallery-photo-growbox";
-	                        }, 10);
-	                      });
-	
-	                      _context.next = 4;
-	                      return delay(1);
-	
-	                    case 4:
-	                    case "end":
-	                      return _context.stop();
-	                  }
-	                }
-	              }, _loop2, _this);
-	            });
-	            _i = 0;
-	
-	          case 2:
-	            if (!(_i < Math.min(photos.length, 20))) {
-	              _context2.next = 7;
-	              break;
-	            }
-	
-	            return _context2.delegateYield(_loop2(_i), "t0", 4);
-	
-	          case 4:
-	            _i++;
-	            _context2.next = 2;
-	            break;
-	
-	          case 7:
-	          case "end":
-	            return _context2.stop();
-	        }
-	      }
-	    }, _callee, this);
-	  }));
-	};
+	  _createClass(Gallery, [{
+	    key: "warpState",
+	    value: function warpState(state) {
+	      // do nothing
+	    }
+	  }, {
+	    key: "transitionState",
+	    value: function transitionState(state) {
+	      // do nothing
+	    }
+	  }]);
+
+	  return Gallery;
+	}();
 
 /***/ },
 /* 302 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var PhotoInspector = exports.PhotoInspector = function PhotoInspector() {
-	  _classCallCheck(this, PhotoInspector);
-	};
-
-/***/ },
-/* 303 */
 /***/ function(module, exports) {
 
 	
@@ -8777,6 +8837,1069 @@
 	  return Object == val.constructor;
 	}
 
+
+/***/ },
+/* 303 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.PhotoInspector = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _util = __webpack_require__(304);
+	
+	var _models = __webpack_require__(300);
+	
+	var _tween = __webpack_require__(306);
+	
+	var TWEEN = _interopRequireWildcard(_tween);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var PhotoInspector = exports.PhotoInspector = function () {
+	  function PhotoInspector(container, asm) {
+	    _classCallCheck(this, PhotoInspector);
+	
+	    this.container = document.getElementById("photo-inspector-container");
+	    this.lastVolume = 1.0;
+	    this.updateViewer("img", "");
+	    this.asm = asm;
+	  }
+	
+	  _createClass(PhotoInspector, [{
+	    key: "updateViewer",
+	    value: function updateViewer(type, url) {
+	      var oldViewer = this.viewer;
+	      if (!this.viewer || this.viewer.localName != type) {
+	        var elem = document.createElement(type);
+	        elem.id = "photo-inspector-fullsize";
+	        if (type == "video") {
+	          elem.loop = true;
+	          elem.autoplay = true;
+	          elem.controls = true;
+	        }
+	        this.viewer = elem;
+	      }
+	      this.viewer.src = url;
+	      this.viewer.volume = this.lastVolume;
+	      if (oldViewer) {
+	        this.container.replaceChild(this.viewer, oldViewer);
+	      } else {
+	        this.container.appendChild(this.viewer);
+	      }
+	    }
+	  }, {
+	    key: "transitionState",
+	    value: function transitionState(state) {
+	      var _this = this;
+	
+	      if (state.view == "photo") {
+	        this.container.className = "tab active";
+	        _models.Photo.byId(state.photoId).then(function (photo) {
+	          _this.photo = photo;
+	          _this.updateViewer(photo.isVideo ? "video" : "img", photo.fullresUrl);
+	        });
+	      } else {
+	        this.container.className = "tab";
+	        if (this.viewer.localName == "video") {
+	          (function () {
+	            var viewer = _this.viewer;
+	            _this.lastVolume = _this.viewer.volume;
+	            new TWEEN.Tween({ volume: _this.viewer.volume }).to({ volume: 0 }, 600).onUpdate(function () {
+	              viewer.volume = this.volume;
+	            }).start();
+	          })();
+	        }
+	      }
+	    }
+	  }, {
+	    key: "warpState",
+	    value: function warpState(state) {
+	      var _this2 = this;
+	
+	      (0, _util.noTransition)([this.container], function () {
+	        return _this2.transitionState(state);
+	      });
+	    }
+	  }]);
+
+	  return PhotoInspector;
+	}();
+
+/***/ },
+/* 304 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var noTransition = exports.noTransition = function noTransition(elements, cb) {
+	  elements.forEach(function (element) {
+	    element.style.transitionProperty = "none";
+	  });
+	  window.requestAnimationFrame(function () {
+	    cb();
+	    window.requestAnimationFrame(function () {
+	      elements.forEach(function (element) {
+	        element.style.transitionProperty = "";
+	      });
+	    });
+	  });
+	};
+
+/***/ },
+/* 305 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var AppStateMachine = exports.AppStateMachine = function () {
+	  function AppStateMachine(initialState) {
+	    _classCallCheck(this, AppStateMachine);
+	
+	    this.components = [];
+	    this.warpState(initialState || this.defaultState());
+	  }
+	
+	  _createClass(AppStateMachine, [{
+	    key: "defaultState",
+	    value: function defaultState() {
+	      return { view: "gallery" };
+	    }
+	  }, {
+	    key: "addComponent",
+	    value: function addComponent(component) {
+	      component.warpState(this.state);
+	      this.components.push(component);
+	    }
+	  }, {
+	    key: "warpState",
+	    value: function warpState(state) {
+	      this.components.forEach(function (component) {
+	        component.warpState(state);
+	      });
+	      history.replaceState(state, "", this.urlFor(state));
+	      this.state = state;
+	    }
+	  }, {
+	    key: "transitionState",
+	    value: function transitionState(state) {
+	      this.components.forEach(function (component) {
+	        component.transitionState(state);
+	      });
+	      history.pushState(state, "", this.urlFor(state));
+	      this.state = state;
+	    }
+	  }, {
+	    key: "urlFor",
+	    value: function urlFor(state) {
+	      switch (state.view) {
+	        case "gallery":
+	          return "/app/round/";
+	        case "photo":
+	          return "/app/round/photo/" + state.photoId;
+	        default:
+	          return "/app/round/";
+	      }
+	    }
+	  }]);
+
+	  return AppStateMachine;
+	}();
+
+/***/ },
+/* 306 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Tween.js - Licensed under the MIT license
+	 * https://github.com/tweenjs/tween.js
+	 * ----------------------------------------------
+	 *
+	 * See https://github.com/tweenjs/tween.js/graphs/contributors for the full list of contributors.
+	 * Thank you all, you're awesome!
+	 */
+	
+	var TWEEN = TWEEN || (function () {
+	
+		var _tweens = [];
+	
+		return {
+	
+			getAll: function () {
+	
+				return _tweens;
+	
+			},
+	
+			removeAll: function () {
+	
+				_tweens = [];
+	
+			},
+	
+			add: function (tween) {
+	
+				_tweens.push(tween);
+	
+			},
+	
+			remove: function (tween) {
+	
+				var i = _tweens.indexOf(tween);
+	
+				if (i !== -1) {
+					_tweens.splice(i, 1);
+				}
+	
+			},
+	
+			update: function (time, preserve) {
+	
+				if (_tweens.length === 0) {
+					return false;
+				}
+	
+				var i = 0;
+	
+				time = time !== undefined ? time : TWEEN.now();
+	
+				while (i < _tweens.length) {
+	
+					if (_tweens[i].update(time) || preserve) {
+						i++;
+					} else {
+						_tweens.splice(i, 1);
+					}
+	
+				}
+	
+				return true;
+	
+			}
+		};
+	
+	})();
+	
+	
+	// Include a performance.now polyfill
+	(function () {
+		// In node.js, use process.hrtime.
+		if (this.window === undefined && this.process !== undefined) {
+			TWEEN.now = function () {
+				var time = process.hrtime();
+	
+				// Convert [seconds, microseconds] to milliseconds.
+				return time[0] * 1000 + time[1] / 1000;
+			};
+		}
+		// In a browser, use window.performance.now if it is available.
+		else if (this.window !== undefined &&
+		         window.performance !== undefined &&
+			 window.performance.now !== undefined) {
+	
+			// This must be bound, because directly assigning this function
+			// leads to an invocation exception in Chrome.
+			TWEEN.now = window.performance.now.bind(window.performance);
+		}
+		// Use Date.now if it is available.
+		else if (Date.now !== undefined) {
+			TWEEN.now = Date.now;
+		}
+		// Otherwise, use 'new Date().getTime()'.
+		else {
+			TWEEN.now = function () {
+				return new Date().getTime();
+			};
+		}
+	})();
+	
+	
+	TWEEN.Tween = function (object) {
+	
+		var _object = object;
+		var _valuesStart = {};
+		var _valuesEnd = {};
+		var _valuesStartRepeat = {};
+		var _duration = 1000;
+		var _repeat = 0;
+		var _yoyo = false;
+		var _isPlaying = false;
+		var _reversed = false;
+		var _delayTime = 0;
+		var _startTime = null;
+		var _easingFunction = TWEEN.Easing.Linear.None;
+		var _interpolationFunction = TWEEN.Interpolation.Linear;
+		var _chainedTweens = [];
+		var _onStartCallback = null;
+		var _onStartCallbackFired = false;
+		var _onUpdateCallback = null;
+		var _onCompleteCallback = null;
+		var _onStopCallback = null;
+	
+		// Set all starting values present on the target object
+		for (var field in object) {
+			_valuesStart[field] = parseFloat(object[field], 10);
+		}
+	
+		this.to = function (properties, duration) {
+	
+			if (duration !== undefined) {
+				_duration = duration;
+			}
+	
+			_valuesEnd = properties;
+	
+			return this;
+	
+		};
+	
+		this.start = function (time) {
+	
+			TWEEN.add(this);
+	
+			_isPlaying = true;
+	
+			_onStartCallbackFired = false;
+	
+			_startTime = time !== undefined ? time : TWEEN.now();
+			_startTime += _delayTime;
+	
+			for (var property in _valuesEnd) {
+	
+				// Check if an Array was provided as property value
+				if (_valuesEnd[property] instanceof Array) {
+	
+					if (_valuesEnd[property].length === 0) {
+						continue;
+					}
+	
+					// Create a local copy of the Array with the start value at the front
+					_valuesEnd[property] = [_object[property]].concat(_valuesEnd[property]);
+	
+				}
+	
+				// If `to()` specifies a property that doesn't exist in the source object,
+				// we should not set that property in the object
+				if (_valuesStart[property] === undefined) {
+					continue;
+				}
+	
+				_valuesStart[property] = _object[property];
+	
+				if ((_valuesStart[property] instanceof Array) === false) {
+					_valuesStart[property] *= 1.0; // Ensures we're using numbers, not strings
+				}
+	
+				_valuesStartRepeat[property] = _valuesStart[property] || 0;
+	
+			}
+	
+			return this;
+	
+		};
+	
+		this.stop = function () {
+	
+			if (!_isPlaying) {
+				return this;
+			}
+	
+			TWEEN.remove(this);
+			_isPlaying = false;
+	
+			if (_onStopCallback !== null) {
+				_onStopCallback.call(_object);
+			}
+	
+			this.stopChainedTweens();
+			return this;
+	
+		};
+	
+		this.stopChainedTweens = function () {
+	
+			for (var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i++) {
+				_chainedTweens[i].stop();
+			}
+	
+		};
+	
+		this.delay = function (amount) {
+	
+			_delayTime = amount;
+			return this;
+	
+		};
+	
+		this.repeat = function (times) {
+	
+			_repeat = times;
+			return this;
+	
+		};
+	
+		this.yoyo = function (yoyo) {
+	
+			_yoyo = yoyo;
+			return this;
+	
+		};
+	
+	
+		this.easing = function (easing) {
+	
+			_easingFunction = easing;
+			return this;
+	
+		};
+	
+		this.interpolation = function (interpolation) {
+	
+			_interpolationFunction = interpolation;
+			return this;
+	
+		};
+	
+		this.chain = function () {
+	
+			_chainedTweens = arguments;
+			return this;
+	
+		};
+	
+		this.onStart = function (callback) {
+	
+			_onStartCallback = callback;
+			return this;
+	
+		};
+	
+		this.onUpdate = function (callback) {
+	
+			_onUpdateCallback = callback;
+			return this;
+	
+		};
+	
+		this.onComplete = function (callback) {
+	
+			_onCompleteCallback = callback;
+			return this;
+	
+		};
+	
+		this.onStop = function (callback) {
+	
+			_onStopCallback = callback;
+			return this;
+	
+		};
+	
+		this.update = function (time) {
+	
+			var property;
+			var elapsed;
+			var value;
+	
+			if (time < _startTime) {
+				return true;
+			}
+	
+			if (_onStartCallbackFired === false) {
+	
+				if (_onStartCallback !== null) {
+					_onStartCallback.call(_object);
+				}
+	
+				_onStartCallbackFired = true;
+	
+			}
+	
+			elapsed = (time - _startTime) / _duration;
+			elapsed = elapsed > 1 ? 1 : elapsed;
+	
+			value = _easingFunction(elapsed);
+	
+			for (property in _valuesEnd) {
+	
+				// Don't update properties that do not exist in the source object
+				if (_valuesStart[property] === undefined) {
+					continue;
+				}
+	
+				var start = _valuesStart[property] || 0;
+				var end = _valuesEnd[property];
+	
+				if (end instanceof Array) {
+	
+					_object[property] = _interpolationFunction(end, value);
+	
+				} else {
+	
+					// Parses relative end values with start as base (e.g.: +10, -3)
+					if (typeof (end) === 'string') {
+	
+						if (end.charAt(0) === '+' || end.charAt(0) === '-') {
+							end = start + parseFloat(end, 10);
+						} else {
+							end = parseFloat(end, 10);
+						}
+					}
+	
+					// Protect against non numeric properties.
+					if (typeof (end) === 'number') {
+						_object[property] = start + (end - start) * value;
+					}
+	
+				}
+	
+			}
+	
+			if (_onUpdateCallback !== null) {
+				_onUpdateCallback.call(_object, value);
+			}
+	
+			if (elapsed === 1) {
+	
+				if (_repeat > 0) {
+	
+					if (isFinite(_repeat)) {
+						_repeat--;
+					}
+	
+					// Reassign starting values, restart by making startTime = now
+					for (property in _valuesStartRepeat) {
+	
+						if (typeof (_valuesEnd[property]) === 'string') {
+							_valuesStartRepeat[property] = _valuesStartRepeat[property] + parseFloat(_valuesEnd[property], 10);
+						}
+	
+						if (_yoyo) {
+							var tmp = _valuesStartRepeat[property];
+	
+							_valuesStartRepeat[property] = _valuesEnd[property];
+							_valuesEnd[property] = tmp;
+						}
+	
+						_valuesStart[property] = _valuesStartRepeat[property];
+	
+					}
+	
+					if (_yoyo) {
+						_reversed = !_reversed;
+					}
+	
+					_startTime = time + _delayTime;
+	
+					return true;
+	
+				} else {
+	
+					if (_onCompleteCallback !== null) {
+						_onCompleteCallback.call(_object);
+					}
+	
+					for (var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i++) {
+						// Make the chained tweens start exactly at the time they should,
+						// even if the `update()` method was called way past the duration of the tween
+						_chainedTweens[i].start(_startTime + _duration);
+					}
+	
+					return false;
+	
+				}
+	
+			}
+	
+			return true;
+	
+		};
+	
+	};
+	
+	
+	TWEEN.Easing = {
+	
+		Linear: {
+	
+			None: function (k) {
+	
+				return k;
+	
+			}
+	
+		},
+	
+		Quadratic: {
+	
+			In: function (k) {
+	
+				return k * k;
+	
+			},
+	
+			Out: function (k) {
+	
+				return k * (2 - k);
+	
+			},
+	
+			InOut: function (k) {
+	
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k;
+				}
+	
+				return - 0.5 * (--k * (k - 2) - 1);
+	
+			}
+	
+		},
+	
+		Cubic: {
+	
+			In: function (k) {
+	
+				return k * k * k;
+	
+			},
+	
+			Out: function (k) {
+	
+				return --k * k * k + 1;
+	
+			},
+	
+			InOut: function (k) {
+	
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k * k;
+				}
+	
+				return 0.5 * ((k -= 2) * k * k + 2);
+	
+			}
+	
+		},
+	
+		Quartic: {
+	
+			In: function (k) {
+	
+				return k * k * k * k;
+	
+			},
+	
+			Out: function (k) {
+	
+				return 1 - (--k * k * k * k);
+	
+			},
+	
+			InOut: function (k) {
+	
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k * k * k;
+				}
+	
+				return - 0.5 * ((k -= 2) * k * k * k - 2);
+	
+			}
+	
+		},
+	
+		Quintic: {
+	
+			In: function (k) {
+	
+				return k * k * k * k * k;
+	
+			},
+	
+			Out: function (k) {
+	
+				return --k * k * k * k * k + 1;
+	
+			},
+	
+			InOut: function (k) {
+	
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k * k * k * k;
+				}
+	
+				return 0.5 * ((k -= 2) * k * k * k * k + 2);
+	
+			}
+	
+		},
+	
+		Sinusoidal: {
+	
+			In: function (k) {
+	
+				return 1 - Math.cos(k * Math.PI / 2);
+	
+			},
+	
+			Out: function (k) {
+	
+				return Math.sin(k * Math.PI / 2);
+	
+			},
+	
+			InOut: function (k) {
+	
+				return 0.5 * (1 - Math.cos(Math.PI * k));
+	
+			}
+	
+		},
+	
+		Exponential: {
+	
+			In: function (k) {
+	
+				return k === 0 ? 0 : Math.pow(1024, k - 1);
+	
+			},
+	
+			Out: function (k) {
+	
+				return k === 1 ? 1 : 1 - Math.pow(2, - 10 * k);
+	
+			},
+	
+			InOut: function (k) {
+	
+				if (k === 0) {
+					return 0;
+				}
+	
+				if (k === 1) {
+					return 1;
+				}
+	
+				if ((k *= 2) < 1) {
+					return 0.5 * Math.pow(1024, k - 1);
+				}
+	
+				return 0.5 * (- Math.pow(2, - 10 * (k - 1)) + 2);
+	
+			}
+	
+		},
+	
+		Circular: {
+	
+			In: function (k) {
+	
+				return 1 - Math.sqrt(1 - k * k);
+	
+			},
+	
+			Out: function (k) {
+	
+				return Math.sqrt(1 - (--k * k));
+	
+			},
+	
+			InOut: function (k) {
+	
+				if ((k *= 2) < 1) {
+					return - 0.5 * (Math.sqrt(1 - k * k) - 1);
+				}
+	
+				return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+	
+			}
+	
+		},
+	
+		Elastic: {
+	
+			In: function (k) {
+	
+				if (k === 0) {
+					return 0;
+				}
+	
+				if (k === 1) {
+					return 1;
+				}
+	
+				return -Math.pow(2, 10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI);
+	
+			},
+	
+			Out: function (k) {
+	
+				if (k === 0) {
+					return 0;
+				}
+	
+				if (k === 1) {
+					return 1;
+				}
+	
+				return Math.pow(2, -10 * k) * Math.sin((k - 0.1) * 5 * Math.PI) + 1;
+	
+			},
+	
+			InOut: function (k) {
+	
+				if (k === 0) {
+					return 0;
+				}
+	
+				if (k === 1) {
+					return 1;
+				}
+	
+				k *= 2;
+	
+				if (k < 1) {
+					return -0.5 * Math.pow(2, 10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI);
+				}
+	
+				return 0.5 * Math.pow(2, -10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI) + 1;
+	
+			}
+	
+		},
+	
+		Back: {
+	
+			In: function (k) {
+	
+				var s = 1.70158;
+	
+				return k * k * ((s + 1) * k - s);
+	
+			},
+	
+			Out: function (k) {
+	
+				var s = 1.70158;
+	
+				return --k * k * ((s + 1) * k + s) + 1;
+	
+			},
+	
+			InOut: function (k) {
+	
+				var s = 1.70158 * 1.525;
+	
+				if ((k *= 2) < 1) {
+					return 0.5 * (k * k * ((s + 1) * k - s));
+				}
+	
+				return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+	
+			}
+	
+		},
+	
+		Bounce: {
+	
+			In: function (k) {
+	
+				return 1 - TWEEN.Easing.Bounce.Out(1 - k);
+	
+			},
+	
+			Out: function (k) {
+	
+				if (k < (1 / 2.75)) {
+					return 7.5625 * k * k;
+				} else if (k < (2 / 2.75)) {
+					return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+				} else if (k < (2.5 / 2.75)) {
+					return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
+				} else {
+					return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
+				}
+	
+			},
+	
+			InOut: function (k) {
+	
+				if (k < 0.5) {
+					return TWEEN.Easing.Bounce.In(k * 2) * 0.5;
+				}
+	
+				return TWEEN.Easing.Bounce.Out(k * 2 - 1) * 0.5 + 0.5;
+	
+			}
+	
+		}
+	
+	};
+	
+	TWEEN.Interpolation = {
+	
+		Linear: function (v, k) {
+	
+			var m = v.length - 1;
+			var f = m * k;
+			var i = Math.floor(f);
+			var fn = TWEEN.Interpolation.Utils.Linear;
+	
+			if (k < 0) {
+				return fn(v[0], v[1], f);
+			}
+	
+			if (k > 1) {
+				return fn(v[m], v[m - 1], m - f);
+			}
+	
+			return fn(v[i], v[i + 1 > m ? m : i + 1], f - i);
+	
+		},
+	
+		Bezier: function (v, k) {
+	
+			var b = 0;
+			var n = v.length - 1;
+			var pw = Math.pow;
+			var bn = TWEEN.Interpolation.Utils.Bernstein;
+	
+			for (var i = 0; i <= n; i++) {
+				b += pw(1 - k, n - i) * pw(k, i) * v[i] * bn(n, i);
+			}
+	
+			return b;
+	
+		},
+	
+		CatmullRom: function (v, k) {
+	
+			var m = v.length - 1;
+			var f = m * k;
+			var i = Math.floor(f);
+			var fn = TWEEN.Interpolation.Utils.CatmullRom;
+	
+			if (v[0] === v[m]) {
+	
+				if (k < 0) {
+					i = Math.floor(f = m * (1 + k));
+				}
+	
+				return fn(v[(i - 1 + m) % m], v[i], v[(i + 1) % m], v[(i + 2) % m], f - i);
+	
+			} else {
+	
+				if (k < 0) {
+					return v[0] - (fn(v[0], v[0], v[1], v[1], -f) - v[0]);
+				}
+	
+				if (k > 1) {
+					return v[m] - (fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m]);
+				}
+	
+				return fn(v[i ? i - 1 : 0], v[i], v[m < i + 1 ? m : i + 1], v[m < i + 2 ? m : i + 2], f - i);
+	
+			}
+	
+		},
+	
+		Utils: {
+	
+			Linear: function (p0, p1, t) {
+	
+				return (p1 - p0) * t + p0;
+	
+			},
+	
+			Bernstein: function (n, i) {
+	
+				var fc = TWEEN.Interpolation.Utils.Factorial;
+	
+				return fc(n) / fc(i) / fc(n - i);
+	
+			},
+	
+			Factorial: (function () {
+	
+				var a = [1];
+	
+				return function (n) {
+	
+					var s = 1;
+	
+					if (a[n]) {
+						return a[n];
+					}
+	
+					for (var i = n; i > 1; i--) {
+						s *= i;
+					}
+	
+					a[n] = s;
+					return s;
+	
+				};
+	
+			})(),
+	
+			CatmullRom: function (p0, p1, p2, p3, t) {
+	
+				var v0 = (p2 - p0) * 0.5;
+				var v1 = (p3 - p1) * 0.5;
+				var t2 = t * t;
+				var t3 = t * t2;
+	
+				return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (- 3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
+	
+			}
+	
+		}
+	
+	};
+	
+	// UMD (Universal Module Definition)
+	(function (root) {
+	
+		if (true) {
+	
+			// AMD
+			!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function () {
+				return TWEEN;
+			}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	
+		} else if (typeof module !== 'undefined' && typeof exports === 'object') {
+	
+			// Node.js
+			module.exports = TWEEN;
+	
+		} else if (root !== undefined) {
+	
+			// Global variable
+			root.TWEEN = TWEEN;
+	
+		}
+	
+	})(this);
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(294)))
 
 /***/ }
 /******/ ]);

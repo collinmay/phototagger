@@ -16,7 +16,11 @@ class TaggerApp < Sinatra::Base
   end
   
   get "/app/round/" do
-    haml :round_gallery, :format => :html5
+    haml :round_gallery, :format => :html5, :locals => {:js_state => {:view => "gallery"}}
+  end
+  
+  get "/app/round/photo/:id" do
+    haml :round_gallery, :format => :html5, :locals => {:js_state => {:view => "photo", :photoId => params[:id]}}
   end
 
   get "/app/round/*" do

@@ -13,7 +13,8 @@ let newImage = (src) => {
 };
 
 export class Gallery {
-  constructor(container, photos, activateInspector) {
+  constructor(asm, photos) {
+    let container = document.getElementById("gallery-grid");
     let domTrees = [];
     for(let i = 0; i < photos.length; i++) {
       let photoContainer = document.createElement("div");
@@ -36,7 +37,10 @@ export class Gallery {
       container.appendChild(photoContainer);
 
       photoGrowbox.addEventListener("click", (evt) => {
-        activateInspector(photos[i]);
+        asm.transitionState({
+          view: "photo",
+          photoId: photos[i].id
+        });
       });
       
       domTrees[i] = {
@@ -45,7 +49,7 @@ export class Gallery {
     }
     
     co(function*() {
-      for(let i = 0; i < Math.min(photos.length, 20); i++) {
+      for(let i = 0; i < Math.min(photos.length, 50); i++) {
         let photo = photos[i];
         newImage(photo.thumbnailUrl).then((img) => {
           let domTree = domTrees[i];
@@ -60,5 +64,13 @@ export class Gallery {
         yield delay(1);
       }
     });
+  }
+
+  warpState(state) {
+    // do nothing
+  }
+
+  transitionState(state) {
+    // do nothing
   }
 }

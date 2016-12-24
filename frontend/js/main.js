@@ -1,18 +1,19 @@
 import {BackendInterface} from "./backend.js";
 import {Gallery} from "./views/gallery.js";
 import {PhotoInspector} from "./views/photoInspector.js";
+import {AppStateMachine} from "./application.js";
 import co from "co";
+import * as TWEEN from "tween.js";
 
 window.onload = () => {
-  let galleryGrid = document.getElementById("gallery-grid");
-  let photoInspectorContainer = document.getElementById("photo-inspector-container");
+  if(history.state) {
+    currentState = history.state; //overrides
+  }
 
-  let activateInspector = (photo) => {
-    photoInspectorContainer.className = "tab active";
-    history.pushState({
-      view: "photo",
-      photoId: photo.id
-    }, "Photo", "/app/round/photo/" + photo.id);
+  let asm = window.appStateMachine = new AppStateMachine(currentState);
+      
+  window.onpopstate = (e) => {
+    asm.transitionState(e.state || asm.defaultState());
   };
   
   let backend = new BackendInterface();
@@ -21,11 +22,15 @@ window.onload = () => {
     let me = yield backend.whoami();
     let photos = yield me.listPhotos();
 
-    let gallery = new Gallery(galleryGrid, photos, activateInspector);
-    
+    let gallery = new Gallery(asm, photos);
+    let photoInspector = new PhotoInspector(asm);
+    asm.addComponent(gallery);
+    asm.addComponent(photoInspector);
   });
 };
 
-window.onpopstate = (evt) => {
-  
-};
+function animate(t) {
+  TWEEN.update(t);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);

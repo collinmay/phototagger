@@ -1,6 +1,7 @@
 %html
   =haml :bootstrap_crud
   %link{:rel => "stylesheet", :href => "/gallery.css"}
+  %script{:type => "text/javascript"}= "var currentState = " + JSON.generate(js_state)
   %script{:src => "/bundle.js", :type => "text/javascript"}
   %title
     Gallery
@@ -9,6 +10,7 @@
       Gallery
   .body
     #photo-inspector-container.tab
-      %h1
-        Hello, world!
+      #photo-inspector-fullsize-centerbox
+        #photo-inspector-fullsize-container
+          %img#photo-inspector-fullsize
     #gallery-grid.tab

@@ -32,7 +32,7 @@ body {
 
 #photo-inspector-container {
     left: 100%;
-    transition: left 1.0s ease;
+    transition: left 0.5s ease;
     z-index: 10;
     padding-top: 16px;
     background-color: white;
@@ -41,6 +41,23 @@ body {
 
 #photo-inspector-container.active {
     left: 0%;
+}
+
+#photo-inspector-fullsize-container {
+    width: 80%;
+    background-color: grey;
+    display: flex;
+    justify-content: center;
+}
+
+#photo-inspector-fullsize-centerbox {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+#photo-inspector-fullsize {
+    width: 100%;
 }
 
 #gallery-grid {

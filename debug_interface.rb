@@ -19,13 +19,23 @@ class TaggerApp < Sinatra::Base
     haml :debug_dump_photo_info, :locals => {:photo => photo}
   end
   
-  get "/app/debug/import/gphotos/" do
+  get "/app/debug/import/gphotos/multi" do
     tok = get_gphotos_token
 
     albums = PicasaWeb::list_albums(tok)
     haml :debug_gphotos_album_list, :locals => {:albums => albums}
   end
 
+  get "/app/debug/import/gphotos/single" do
+    user
+    tok = get_gphotos_token
+
+    photo = PicasaWeb::get_photo(tok, params[:albumID], params[:photoID])
+    import_gphoto(user, photo)
+
+    redirect "/app/debug/dump/photo/#{photo.id}/"
+  end
+  
   get "/app/debug/import/gphotos/:albumid" do |albumid|
     user # verify stuff
     tok = get_gphotos_token

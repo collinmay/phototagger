@@ -44,16 +44,21 @@ export class BackendInterface {
         throw "owner mismatch";
       }
 
-      return json.photos.map((photo) => {
-        return new Photo(this, photo.id, user, photo.provider, photo.provider_id, photo.fullres_url, photo.thumbnail_url);
-      });
+      return Promise.all(json.photos.map((photo) => {
+        return Photo.fromJson(this, photo);
+      }));
     });
   }
 
+  getPhoto(photoId) {
+    return this.rq.get("/api/photo/" + photoId).then((json) => {
+      return Photo.fromJson(this, json.photo);
+    });
+  }
+  
   postPhoto(user, photo) {
     return this.rq.post("/api/user/" + user.id + "/photo/", {provider: photo.provider, provider_id: photo.providerId}).then((json) => {
-      jp = json.photo;
-      return new Photo(this, jp.id, user, jp.provider, jp.provider_id, jp.fullres_url, jp.thumbnail_url);
+      return Photo.fromJson(this, json.photo);
     });
   }
 }

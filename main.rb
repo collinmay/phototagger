@@ -74,27 +74,41 @@ class TaggerApp < Sinatra::Base
     end
     
     def user
-      if @user && grant.grants_generic_access?(@user) then
+      if @user then
         return @user
       end
       
       if !params[:user] || params[:user] == "me" then
         if grant.default_user then
-          @user = grant.default_user
+          @user = grant.protect(grant.default_user)
         else
           raise NoDefaultUserGrantedError.new(@user)
         end
       else
-        @user = User[:id => params[:user].to_i]
+        @user = grant.protect(User[:id => params[:user].to_i])
         if @user == nil then
           raise NoSuchObjectExistsError.new(:user, params[:user].to_i)
-        end
-        if !grant.grants_generic_access?(@user) then
-          raise AccessDeniedError.new(@grant, @user)
         end
       end
 
       return @user
+    end
+
+    def photo
+      if @photo then
+        return @photo
+      end
+
+      if !params[:photo_id] then
+        raise NoObjectSpecifiedError.new(:photo)
+      end
+
+      @photo = grant.protect(Photo[:id => params[:photo_id].to_i])
+      if @photo == nil then
+        raise NoSuchObjectExistsError.new(:photo, params[:photo_id].to_i)
+      end
+
+      return @photo
     end
     
     def get_gphotos_token
@@ -112,8 +126,12 @@ class TaggerApp < Sinatra::Base
     end
 
     def import_imgur_image(user, image)
-      photo = Photo.create(:provider => "imgur")
-      imgur_photo = ImgurPhoto.create(:imgur_id => image["id"], :photo_id => photo.id, :fullres_url => image["link"])
+      photo = Photo.create(:provider => "imgur", :is_video => image["animated"])
+      imgur_photo = ImgurPhoto.create(
+        :imgur_id => image["id"],
+        :photo_id => photo.id,
+        :fullres_imgthumb_url => image["link"],
+        :fullres_url => image["animated"] ? image["mp4"] : image["link"])
       
       user.add_photo(photo)
       return photo
@@ -126,10 +144,15 @@ class TaggerApp < Sinatra::Base
     end
 
     def import_gphoto(user, image)
-      photo = Photo.create(:provider => "gphotos")
-      google_photo = GooglePhoto.create(:google_id => image.id, :fullres_url => image.fullsize.url, :largethumb_url => image.thumbnails.max { |a,b| a.width <=> b.width}.url, :photo_id => photo.id)
+      photo = Photo.create(:provider => "gphotos", :is_video => image.fullsize.medium == "video")
+      google_photo = GooglePhoto.create(
+        :google_id => image.id,
+        :fullres_url => image.fullsize.url,
+        :largethumb_url => image.thumbnails.max { |a,b| a.width <=> b.width}.url,
+        :photo_id => photo.id)
 
       user.add_photo(photo)
+      return photo
     end
   end
 

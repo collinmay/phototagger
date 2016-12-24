@@ -6,6 +6,13 @@ class TaggerApp < Sinatra::Base
      :google_id => user.google_id, :id => user.id}.to_json
   end
 
+  get "/api/photo/:photo_id" do
+    content_type :json
+    {:status => :success,
+     :photo => photo.to_hash
+    }.to_json
+  end
+  
   get "/api/user/:user/photo/list" do
     content_type :json
     {:status => :success,
@@ -76,6 +83,22 @@ class TaggerApp < Sinatra::Base
         :extra_keys => (data.keys - valid_keys),
         :message => "Malformed request: photo contains extra keys."
       }.to_json
+    end
+  end
+
+  [NoSuchObjectExistsError,AccessDeniedError].each do |err|
+    error err do
+      err = env["sinatra.error"]
+      if request.path[0,5] == "/api/" then
+        content_type :json
+        status 401
+        {
+          :status => "error",
+          :reason => "access denied"
+        }.to_json
+      else
+        raise err
+      end
     end
   end
 end

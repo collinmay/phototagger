@@ -17,8 +17,13 @@
         User Actions
         %ul
           %li
-            %a{:href => "/app/debug/import/gphotos/"}
+            %a{:href => "/app/debug/import/gphotos/multi"}
               Import Photos From Google Photos
+          %li
+            %form{:method => "GET", :action => "/app/debug/import/gphotos/single"}
+              %input{:type => "text", :name => "albumID", :placholder => "album ID"}
+              %input{:type => "text", :name => "photoID", :placholder => "photo iD"}
+              %input{:type => "submit", :value => "Import Single Image from Google Photos"}
           %li
             %form{:method => "GET", :action => "/app/debug/import/imgur/favorites"}
               %input{:type => "text", :name => "username", :placeholder => "imgur username"}

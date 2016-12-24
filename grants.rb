@@ -8,15 +8,29 @@ class CookieGrant
   end
 
   def grants_generic_access?(object)
-    if object.is_a? User then
+    case object
+    when User
       return object.id == @session[:user_id]
-    else
-      return false
+    when Photo
+      return object.user.id == @session[:user_id]
     end
   end
 
   def default_user
     return User[:id => @session[:user_id]]
+  end
+
+  def protect(object)
+    if object == nil then
+      return nil
+    else
+      if grants_generic_access?(object)
+      #return object.restrict(self)
+        return object
+      else
+        raise AccessDeniedError.new(self, object)
+      end
+    end
   end
 end
 
@@ -27,5 +41,9 @@ class DebugGrant < CookieGrant
 
   def grants_generic_access?(object)
     return true
+  end
+
+  def protect(object)
+    return object
   end
 end

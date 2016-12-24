@@ -16,13 +16,16 @@ class Photo < Sequel::Model
   one_to_one :google_photo
   one_to_one :imgur_photo
   many_to_many :tags
-
+  many_to_one :user
+  
   def to_hash
     {
       :id => id,
+      :user => user_id,
       :provider => provider,
       :provider_id => provider_id,
       :fullres_url => fullres_url,
+      :is_video => is_video,
       :thumbnail_url => thumbnail_url
     }
   end
@@ -148,7 +151,7 @@ class ImgurPhoto < Sequel::Model
 
   def thumbnail_url
     i = fullres_url.rindex(".")
-    return fullres_url[0, i] + "b" + fullres_url[i, fullres_url.length]
+    return fullres_imgthumb_url[0, i] + "b" + fullres_url[i, fullres_url.length]
   end
 end
 ImgurPhoto.unrestrict_primary_key
