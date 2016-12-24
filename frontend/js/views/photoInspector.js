@@ -38,6 +38,7 @@ export class PhotoInspector {
         this.photo = photo;
         this.updateViewer(photo.isVideo ? "video" : "img", photo.fullresUrl);
       });
+      this.container.scrollTop = 0;
     } else {
       this.container.className = "tab";
       if(this.viewer.localName == "video") {
