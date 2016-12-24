@@ -49,7 +49,7 @@ export class Gallery {
     }
     
     co(function*() {
-      for(let i = 0; i < Math.min(photos.length, 50); i++) {
+      for(let i = 0; i < Math.min(photos.length, 500000); i++) {
         let photo = photos[i];
         newImage(photo.thumbnailUrl).then((img) => {
           let domTree = domTrees[i];
