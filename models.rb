@@ -150,8 +150,8 @@ class ImgurPhoto < Sequel::Model
   end
 
   def thumbnail_url
-    i = fullres_url.rindex(".")
-    return fullres_imgthumb_url[0, i] + "b" + fullres_url[i, fullres_url.length]
+    i = fullres_imgthumb_url.rindex(".")
+    return fullres_imgthumb_url[0, i] + "b" + fullres_imgthumb_url[i, fullres_imgthumb_url.length]
   end
 end
 ImgurPhoto.unrestrict_primary_key
