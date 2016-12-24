@@ -31,6 +31,15 @@ body {
     overflow-y: scroll;
 }
 
+#view-title {
+    transform: rotateY(0deg);
+    transition: transform 0.25s linear;
+}
+
+#view-title.transition {
+    transform: rotateY(90deg);
+}
+
 #photo-inspector-container {
     left: 100%;
     transition: left 0.5s ease;

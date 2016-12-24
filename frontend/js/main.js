@@ -1,6 +1,7 @@
 import {BackendInterface} from "./backend.js";
 import {Gallery} from "./views/gallery.js";
 import {PhotoInspector} from "./views/photoInspector.js";
+import {AppBar} from "./views/appBar.js";
 import {AppStateMachine} from "./application.js";
 import co from "co";
 import * as TWEEN from "tween.js";
@@ -24,8 +25,10 @@ window.onload = () => {
 
     let gallery = new Gallery(asm, photos);
     let photoInspector = new PhotoInspector(asm);
+    let appBar = new AppBar(asm);
     asm.addComponent(gallery);
     asm.addComponent(photoInspector);
+    asm.addComponent(appBar);
   });
 };
 
