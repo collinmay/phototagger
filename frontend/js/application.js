@@ -1,6 +1,6 @@
 export class AppStateMachine {
   constructor(initialState) {
-    this.components = [];
+    this.controllers = [];
     this.warpState(initialState || this.defaultState());
   }
 
@@ -8,24 +8,26 @@ export class AppStateMachine {
     return {view: "gallery"};
   }
   
-  addComponent(component) {
-    component.warpState(this.state);
-    this.components.push(component);
+  addController(controller) {
+    controller.transitionState(this.state, true);
+    this.controllers.push(controller);
   }
   
   warpState(state) {
-    this.components.forEach((component) => {
-      component.warpState(state);
+    this.controllers.forEach((controller) => {
+      controller.transitionState(state, true);
     });
     history.replaceState(state, "", this.urlFor(state));
     this.state = state;
   }
 
-  transitionState(state) {
-    this.components.forEach((component) => {
-      component.transitionState(state);
+  transitionState(state, skipHistory) {
+    this.controllers.forEach((controller) => {
+      controller.transitionState(state, false);
     });
-    history.pushState(state, "", this.urlFor(state));
+    if(!skipHistory) {
+      history.pushState(state, "", this.urlFor(state));
+    }
     this.state = state;
   }
 

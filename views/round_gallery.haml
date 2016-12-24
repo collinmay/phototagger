@@ -5,12 +5,29 @@
   %script{:src => "/bundle.js", :type => "text/javascript"}
   %title
     Gallery
-  %nav.navbar.navbar-fixed-top.navbar-dark.bg-inverse
-    %span.navbar-brand#view-title
+  %nav.navbar-custom
+    -#%span#view-title
       Gallery
+    %div.navmode-container
+      %div.navmode.active#gallery-navmode
+        %span
+          Gallery
+      %div.navmode#photo-navmode
+        %a.iconbutton#photo-inspector-bar-gallery-button{:href => "/app/round/"}
+          %img{:src => "/ic_collections_white_24px.svg"}
+        %span
+          Photo
+        .flexglue
+        %img.iconbutton#photo-inspector-bar-delete-button{:src => "/ic_delete_white_24px.svg"}
   .body
-    #photo-inspector-container.tab
+    #photo-inspector-tab.tab
       #photo-inspector-fullsize-centerbox
         #photo-inspector-fullsize-container
-          %img#photo-inspector-fullsize
+        .flexglue
     #gallery-grid.tab
+  .centered.fixed-bottom
+    #snackbar
+      #snackbar-text
+        This should never show.
+      #snackbar-option
+        ?!?!

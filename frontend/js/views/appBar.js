@@ -1,34 +1,40 @@
 import {noTransition} from "../util.js";
-import {Photo} from "../models.js";
-import * as TWEEN from "tween.js";
+import {AppBarTitleView} from "./appBarTitle.js";
 
-export class AppBar {
-  constructor(asm) {
-    this.viewTitle = document.getElementById("view-title");
-    this.transitioning = false;
-    this.viewTitle.addEventListener("transitionend", (event) => {
-      if(this.transitioning) {
-        this.warpState(asm.state);
-        this.viewTitle.className = "navbar-brand";
-        console.log("finish transition");
-        this.transitioning = false;
-      }
-    }, true);
+export class AppBarView {
+  constructor() {
+//    this.titleView = new AppBarTitleView();
+    this.modeContainers = [];
+    this.currentMode = null;
   }
 
-  warpState(state) {
+  activate(mode, warp) {
+    if(warp) {
+      noTransition(this.modeContainers, () => {
+        this.activate(mode, false);
+      });
+    } else {
+      if(this.currentMode) {
+        this.currentMode.className = "navmode";
+      }
+      this.currentMode = mode.getContainer();
+      this.currentMode.className = "navmode active";
+    }
+  //  this.titleView.setContent(mode.getTitle(), warp);
+  }
+  
+/*  transitionState(state) {
+    if(this.currentMode) {
+      this.currentMode.className = "navmode"
+    }
     switch(state.view) {
     case "gallery":
-      this.viewTitle.textContent = "Gallery";
+      this.currentMode = this.navModes.gallery;
       break;
     case "photo":
-      this.viewTitle.textContent = "Photo";
+      this.currentMode = this.navModes.photo;
       break;
     }
-  }
-
-  transitionState(state) {
-    this.transitioning = true;
-    this.viewTitle.className = "transition navbar-brand";
-  }
+    this.currentMode.className = "navmode active";
+  }*/
 }

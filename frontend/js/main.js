@@ -1,10 +1,18 @@
-import {BackendInterface} from "./backend.js";
-import {Gallery} from "./views/gallery.js";
-import {PhotoInspector} from "./views/photoInspector.js";
-import {AppBar} from "./views/appBar.js";
-import {AppStateMachine} from "./application.js";
 import co from "co";
 import * as TWEEN from "tween.js";
+
+import {AppBarController} from "./controllers/appBar.js";
+import {AppBarView} from "./views/appBar.js";
+import {AppStateMachine} from "./application.js";
+import {BackendInterface} from "./backend.js";
+import {GalleryAppBarView} from "./views/bar/gallery.js";
+import {GalleryController} from "./controllers/gallery.js";
+import {GalleryView} from "./views/gallery.js";
+import {PhotoInspectorAppBarView} from "./views/bar/photoInspector.js";
+import {PhotoInspectorController} from "./controllers/photoInspector.js";
+import {PhotoInspectorView} from "./views/photoInspector.js";
+import {SnackbarController} from "./controllers/snackbar.js";
+import {SnackbarView} from "./views/snackbar.js";
 
 window.onload = () => {
   if(history.state) {
@@ -14,7 +22,7 @@ window.onload = () => {
   let asm = window.appStateMachine = new AppStateMachine(currentState);
       
   window.onpopstate = (e) => {
-    asm.transitionState(e.state || asm.defaultState());
+    asm.transitionState(e.state || asm.defaultState(), true);
   };
   
   let backend = new BackendInterface();
@@ -23,12 +31,15 @@ window.onload = () => {
     let me = yield backend.whoami();
     let photos = yield me.listPhotos();
 
-    let gallery = new Gallery(asm, photos);
-    let photoInspector = new PhotoInspector(asm);
-    let appBar = new AppBar(asm);
-    asm.addComponent(gallery);
-    asm.addComponent(photoInspector);
-    asm.addComponent(appBar);
+    let snackbar = new SnackbarController({asm, view: new SnackbarView("snackbar")});
+    let appBar = new AppBarController({asm, view: new AppBarView()})
+    let photoInspector = new PhotoInspectorController({asm, view: new PhotoInspectorView(),
+                                                       barView: new PhotoInspectorAppBarView(),
+                                                       appBar, snackbar});
+    let gallery = new GalleryController({asm, view: new GalleryView(asm, photos),
+                                         barView: new GalleryAppBarView(), appBar});
+    asm.addController(gallery);
+    asm.addController(photoInspector);
   });
 };
 

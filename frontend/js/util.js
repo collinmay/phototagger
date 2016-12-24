@@ -1,4 +1,4 @@
-export let noTransition = (elements, cb) => {
+export let noTransition = (elements, cb, after) => {
   elements.forEach((element) => {
     element.style.transitionProperty = "none";
   });
@@ -8,6 +8,11 @@ export let noTransition = (elements, cb) => {
       elements.forEach((element) => {
         element.style.transitionProperty = "";
       });
+      if(after) {
+        window.requestAnimationFrame(() => {
+          after();
+        });
+      }
     });
   });
 }

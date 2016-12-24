@@ -12,7 +12,7 @@ let newImage = (src) => {
   });
 };
 
-export class Gallery {
+export class GalleryView {
   constructor(asm, photos) {
     let container = document.getElementById("gallery-grid");
     let domTrees = [];
@@ -49,7 +49,7 @@ export class Gallery {
     }
     
     co(function*() {
-      for(let i = 0; i < Math.min(photos.length, 500000); i++) {
+      for(let i = 0; i < Math.min(photos.length, 20); i++) {
         let photo = photos[i];
         newImage(photo.thumbnailUrl).then((img) => {
           let domTree = domTrees[i];
