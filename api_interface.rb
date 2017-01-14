@@ -101,4 +101,18 @@ class TaggerApp < Sinatra::Base
       end
     end
   end
+
+  error NoDefaultUserGrantedError do
+    err = env["sinatra.error"]
+    if request.path[0,5] == "/api/" then
+      content_type :json
+      status 401
+      {
+        :status => "error",
+        :reason => "no default user granted"
+      }.to_json
+    else
+      raise err
+    end
+  end
 end

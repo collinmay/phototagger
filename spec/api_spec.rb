@@ -7,18 +7,30 @@ describe "Photo Tagger API" do
       @user2 = User.create(:google_id => "222222222")
     end
     
-    context "empty session" do
-      describe "/api/user/:user/photo/list" do
-        it "raises NoDefaultUserGrantedError for me" do
-          expect { get "/api/user/me/photo/list" }.to raise_error(NoDefaultUserGrantedError)
-        end
-        
-        it "denies access to user1" do
-          expect { get "/api/user/#{@user1.id}/photo/list" }.to raise_error(AccessDeniedError)
+    context "with empty session" do
+      describe "GET /api/user/:user/photo/list" do
+        it "errors out with 'me' as user" do
+          get "/api/user/me/photo/list"
+          expect(last_response.status).to eq 401
+          expect(last_response.content_type).to eq "application/json"
+          
+          expect(JSON.parse(last_response.body)).to include(
+                                                      "status" => "error",
+                                                      "reason" => "no default user granted"
+                                                    )
         end
 
-        it "denies access to user2" do
-          expect { get "/api/user/#{@user1.id}/photo/list" }.to raise_error(AccessDeniedError)
+        ["user1", "user2"].each do |name|
+          it "denies access to #{name}" do
+            get "/api/user/#{{"user1" => @user1, "user2" => @user2}[name].id}/photo/list"
+            expect(last_response.status).to eq 401
+            expect(last_response.content_type).to eq "application/json"
+            
+            expect(JSON.parse(last_response.body)).to include(
+                                                        "status" => "error",
+                                                        "reason" => "access denied"
+                                                      )
+          end
         end
       end
     end
@@ -70,9 +82,14 @@ describe "Photo Tagger API" do
         end
         context "listing user2's photos" do
           it "should raise AccessDeniedError" do
-            expect {
-              get "/api/user/#{@user2.id}/photo/list", {}, forge_session(:user_id => @user1.id)
-            }.to raise_error(AccessDeniedError)
+            get "/api/user/#{@user2.id}/photo/list", {}, forge_session(:user_id => @user1.id)
+            expect(last_response.status).to eq 401
+            expect(last_response.content_type).to eq "application/json"
+            
+            expect(JSON.parse(last_response.body)).to include(
+                                                        "status" => "error",
+                                                        "reason" => "access denied"
+                                                      )
           end
         end
       end
