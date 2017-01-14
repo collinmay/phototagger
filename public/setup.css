@@ -1,0 +1,100 @@
+html {
+    height: 100%;
+    min-height: 100%;
+    min-width: 100%;
+    overflow: hidden;
+    width: 100%;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    width: 100%;
+}
+
+.container-fluid {
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+
+.row-fluid {
+    display: table-cell;
+    height: 100%;
+    vertical-align: middle;
+}
+
+.step {
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    position: absolute;
+    left: 100%;
+    transition: left 0.5s ease;
+    padding: 10px;
+}
+
+.step.active {
+    left: 0;
+}
+
+.step.inactive {
+    left: -100%;
+}
+
+@keyframes shake {
+    0% { transform: translate(30px); }
+    20% { transform: translate(-30px); }
+    40% { transform: translate(15px); }
+    60% { transform: translate(-15px); }
+    80% { transform: translate(8px); }
+    100% { transform: translate(0px); }
+}
+
+.step.shake {
+    animation: shake 0.4s 1 linear;
+}
+
+#step1 {
+    display: flex;
+    flex-direction: column;
+}
+
+#step1 > pre {
+    flex-grow: 1;
+}
+
+#dbsetup {
+    display: flex;
+    flex-direction: column;
+}
+
+#dbsetup > pre {
+    flex-grow: 1;
+}
+
+.stepheader {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+}
+
+#config-userperms-container {
+    position: relative;
+    overflow: hidden;
+    transform: scale(1, 1);
+    transition: all 0.5s ease;
+}
+
+#config-userperms-container.disabled {
+    transform: scale(1, 0);
+}
+
+#config-userperms {
+    transition: all 0.5s ease;
+    transform: translateY(0);
+}
+
+#config-userperms.disabled {
+    transform: translateY(-100%);
+}

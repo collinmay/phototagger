@@ -2,6 +2,7 @@ source "https://rubygems.org"
 gem "sinatra"
 gem "sinatra-contrib"
 gem "sinatra-partial"
+gem "faye-websocket" # for setup app
 gem "oauth2"
 gem "haml"
 gem "nokogiri"

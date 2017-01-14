@@ -1,0 +1,114 @@
+%html
+  =haml :bootstrap_crud
+  %link{:rel => "stylesheet", :href => "/setup.css"}
+  %script{:src => "/setup.js"}
+  %title
+    Photo Tagger Setup
+  #begin.step.active
+    .container-fluid
+      .row-fluid
+        .col-lg-12
+          .centering.vertical-center
+            .text-xs-center
+              %h2.without-margin
+                Ready for setup.
+              %h4
+                %a{:href => "#", :onclick => "attemptBegin();"}
+                  Begin.
+  #step1.step
+    %form
+      .stepheader
+        %h1
+          Step 1: Connect to Database
+        %button.btn.btn-primary#dbConnect{:type => "submit", :onclick => "connectDb();"}
+          Connect
+      .form-group
+        %label{:for => "dbUrl"}
+          Database URL
+        %input.form-control#dbUrl{:type => "text", :placeholder => "mysql2://username:password@server/database"}
+    %pre#dbErrorLog{:style => "overflow: auto"}
+  #dbsetup.step
+    .stepheader
+      %h1
+        Setting up Database...
+      %button.btn.btn-primary#dbSetupBtn{:onclick => "runDbSetup();"}
+        Begin
+    %pre#dbsetupLog
+  #step2.step
+    %form
+      .stepheader
+        %h1
+          Step 2: Configure Application
+        %button.btn.btn-primary#configSubmitBtn{:onclick => "submitConfig();"}
+          Submit
+      %h4
+        Global Settings
+      .form-check
+        %label.form-check-label
+          %input.form-check-input#config-singleuser{:type => "checkbox"}
+          Single-user mode
+          .alrt-danger
+            (disables authentication!)
+      .form-check
+        %label.form-check-label
+          %input.form-check-input#config-hotlinks{:type => "checkbox", :checked => true}
+          Enable hotlinking
+      .form-check
+        %label.form-check-label
+          %input.form-check-input#config-uploads{:type => "checkbox", :checked => true}
+          Enable file uploads
+      .form-check
+        %label.form-check-label
+          %input.form-check-input#config-imgur{:type => "checkbox", :checked => true}
+          Enable imgur images
+      .form-check
+        %label.form-check-label
+          %input.form-check-input#config-gphotos{:type => "checkbox", :checked => true}
+          Enable Google Photos
+      #config-userperms-container
+        #config-userperms
+          %h4
+            Default User Permissions
+          .form-check
+            %label.form-check-label
+              %input.form-check-input#config-usp-hotlink{:type => "checkbox"}
+              Can hotlink images
+          .form-check
+            %label.form-check-label
+              %input.form-check-input#config-usp-upload{:type => "checkbox"}
+              Can upload images
+          .form-check          
+            %label.form-check-label
+              %input.form-check-input#config-usp-imgur{:type => "checkbox", :checked => true}
+              Can import images from imgur
+          .form-check
+            %label.form-check-label
+              %input.form-check-input#config-usp-gphotos{:type => "checkbox", :checked => true}
+              Can import images from Google Photos
+  #wsclose.step
+    .container-fluid
+      .row-fluid
+        .col-lg-12
+          .centering.vertical-center
+            .text-xs-center
+              %h2.without-margin
+                The websocket has
+                %span.text-danger
+                  unexpectedly closed.
+              %h4
+                Restart the web server and
+                %a{:href => "#", :onclick => "attemptBegin();"}
+                  try again.
+  #locked.step
+    .container-fluid
+      .row-fluid
+        .col-lg-12
+          .centering.vertical-center
+            .text-xs-center
+              %h2.without-margin
+                Setup locked.
+              %h4
+                Setup is already running somewhere else.
+
+
+    
