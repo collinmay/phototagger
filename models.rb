@@ -155,3 +155,28 @@ class ImgurPhoto < Sequel::Model
   end
 end
 ImgurPhoto.unrestrict_primary_key
+
+class Permission < Sequel::Model
+  many_to_one :permission_group
+
+  def to_s
+    "#" + id.to_s + " " + permission_node + ": " + permitted.to_s + " for #" + permission_group.id.to_s + " " + permission_group.name
+  end
+end
+
+class PermissionGroup < Sequel::Model
+  one_to_many :permissions
+
+  def get_permission(node)
+    return permissions_dataset[:permission_node => node]
+  end
+
+  def set_permission(node, permitted)
+    p = get_permission(node) || Permission.new
+    p.permission_group = self
+    p.permission_node = node
+    p.permitted = permitted
+    p.save
+    return p
+  end
+end

@@ -8,7 +8,7 @@ Sequel.migration do
     create_table(:photos) do
       primary_key :id
       foreign_key :owner_id, :users
-      column :provider, 'ENUM("gphotos", "imgur", "hotlink")'
+      column :provider, String
     end
 
     create_table(:tags) do

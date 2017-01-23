@@ -9,7 +9,7 @@
       .row-fluid
         .col-lg-12
           .centering.vertical-center
-            .text-xs-center
+            .text-center
               %h2.without-margin
                 Ready for setup.
               %h4
@@ -20,7 +20,7 @@
       .stepheader
         %h1
           Step 1: Connect to Database
-        %button.btn.btn-primary#dbConnect{:type => "submit", :onclick => "connectDb();"}
+        %button.btn.btn-primary#dbConnect{:type => "submit"}
           Connect
       .form-group
         %label{:for => "dbUrl"}
@@ -31,66 +31,66 @@
     .stepheader
       %h1
         Setting up Database...
-      %button.btn.btn-primary#dbSetupBtn{:onclick => "runDbSetup();"}
+      %button.btn.btn-primary#dbSetupBtn
         Begin
     %pre#dbsetupLog
-  #step2.step
-    %form
-      .stepheader
-        %h1
-          Step 2: Configure Application
-        %button.btn.btn-primary#configSubmitBtn{:onclick => "submitConfig();"}
-          Submit
-      %h4
-        Global Settings
-      .form-check
-        %label.form-check-label
-          %input.form-check-input#config-singleuser{:type => "checkbox"}
-          Single-user mode
-          .alrt-danger
-            (disables authentication!)
-      .form-check
-        %label.form-check-label
-          %input.form-check-input#config-hotlinks{:type => "checkbox", :checked => true}
-          Enable hotlinking
-      .form-check
-        %label.form-check-label
-          %input.form-check-input#config-uploads{:type => "checkbox", :checked => true}
-          Enable file uploads
-      .form-check
-        %label.form-check-label
-          %input.form-check-input#config-imgur{:type => "checkbox", :checked => true}
-          Enable imgur images
-      .form-check
-        %label.form-check-label
-          %input.form-check-input#config-gphotos{:type => "checkbox", :checked => true}
-          Enable Google Photos
-      #config-userperms-container
-        #config-userperms
-          %h4
-            Default User Permissions
-          .form-check
-            %label.form-check-label
-              %input.form-check-input#config-usp-hotlink{:type => "checkbox"}
-              Can hotlink images
-          .form-check
-            %label.form-check-label
-              %input.form-check-input#config-usp-upload{:type => "checkbox"}
-              Can upload images
-          .form-check          
-            %label.form-check-label
-              %input.form-check-input#config-usp-imgur{:type => "checkbox", :checked => true}
-              Can import images from imgur
-          .form-check
-            %label.form-check-label
-              %input.form-check-input#config-usp-gphotos{:type => "checkbox", :checked => true}
-              Can import images from Google Photos
+  #createadmin.step
+    .stepheader
+      %h1
+        Step 3: Create Administrator Account
+      %button.btn.btn-primary#createAdminAuthBtn
+        Authenticate
+  #permgroup.step
+    .stepheader
+      %h1
+        Step 2: Configure Permission Groups
+      %button.btn.btn-primary#permGroupSubmitBtn
+        Submit
+    #perm-groups-container
+      .card.mb-4
+        .card-header
+          %ul.nav.nav-tabs.card-header-tabs
+            %li.nav-item
+              %a.nav-link.active{:href => "#"}
+                Image Hosting Permissions
+            %li.nav-item
+              %a.nav-link{:href => "#"}
+                Administrative Permissions
+        .card-block
+          %h4.card-title
+            Mockup Permission Group
+          %form
+            %h4
+            .form-check
+              %label.form-check-label
+                %input.form-check-input{:type => "checkbox"}
+                Can upload photos
+            .form-check
+              %label.form-check-label
+                %input.form-check-input{:type => "checkbox"}
+                Can hotlink photos
+            .form-check
+              %label.form-check-label
+                %input.form-check-input{:type => "checkbox"}
+                Can import photos from imgur
+            .form-check
+              %label.form-check-label
+                %input.form-check-input{:type => "checkbox"}
+                Can import photos from Google Photos
+        .card-footer.text-muted{:alt => "INSERT TIME HERE"}
+          Last modified: right now.
+      .permGroup.card.mb-4
+        .card-block
+          %h4.card-title
+            %input{:placeholder => "Name"}
+          .btn.btn-primary
+            Create
   #wsclose.step
     .container-fluid
       .row-fluid
         .col-lg-12
           .centering.vertical-center
-            .text-xs-center
+            .text-center
               %h2.without-margin
                 The websocket has
                 %span.text-danger
@@ -104,7 +104,7 @@
       .row-fluid
         .col-lg-12
           .centering.vertical-center
-            .text-xs-center
+            .text-center
               %h2.without-margin
                 Setup locked.
               %h4

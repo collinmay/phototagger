@@ -1,4 +1,5 @@
 require "sinatra"
+require "sinatra/config_file"
 require "sinatra/partial"
 require "faye/websocket"
 require "oauth2"
@@ -34,6 +35,16 @@ set :setup_step, "step1"
 set :sockets_waiting, Array.new
 set :server, :thin
 
+register Sinatra::ConfigFile
+config_file "./config.yml"
+set :oauth2_client, OAuth2::Client.new(settings.google_client_id, settings.google_client_secret, {
+                                         :site => "https://accounts.google.com",
+                                         :authorize_url => "/o/oauth2/auth",
+                                         :token_url => "/o/oauth2/token"
+                                       })
+
+SCOPE = "https://www.googleapis.com/auth/userinfo.profile"
+
 Faye::WebSocket.load_adapter("thin")
 
 helpers do
@@ -46,12 +57,36 @@ helpers do
       end
       e = e.cause
       if e then
-                buffer << "Caused by " + e.class.name + ": " + e.message
+        buffer << "Caused by " + e.class.name + ": " + e.message
       end
     end
     return buffer.join("\n")
   end
+
+  def redirect_uri
+    uri = URI.parse(request.url)
+    uri.path = "/oauth2/callback"
+    uri.query = nil
+    uri.to_s
+  end
 end
+
+def send_permission_groups(ws)
+  ws.send({:type => "step_data", :step => "permgroup", :content => PermissionGroup.all.map do |pg|
+             next {
+               :name => pg.name,
+               :id => pg.id,
+               :nodeValues => Hash[pg.permissions.map do |p|
+                                     [
+                                       p.permission_node,
+                                       p.permitted
+                                     ]
+                                   end]
+             }
+           end}.to_json)
+  puts "sent permission groups"
+end
+loaded_models = false
 
 get "/" do
   if Faye::WebSocket.websocket?(request.env)
@@ -60,6 +95,9 @@ get "/" do
     ws.on :open do |event|
       if settings.setup_lock.try_lock then
         has_lock = true
+        if loaded_models then
+          send_permission_groups ws
+        end
         ws.send({:type => "switch_step", :step => settings.setup_step}.to_json);
       else
         ws.send({:type => "switch_step", :step => "locked"}.to_json);
@@ -87,7 +125,6 @@ get "/" do
         when "step1"
           begin
             DB = Sequel.connect(dat["url"], :test => true)
-            require_relative "./models.rb"
             class WSLogIO
               def initialize(ws)
                 @ws = ws
@@ -103,8 +140,11 @@ get "/" do
               Sequel.extension :migration
               if Sequel::Migrator.is_current?(DB, "migrations") then
                 puts "skipping db setup"
-                ws.send({:type => "switch_step", :step => "step2"}.to_json);
-                settings.setup_step = "step2";
+                require_relative "./models.rb"
+                loaded_models = true
+                send_permission_groups ws
+                ws.send({:type => "switch_step", :step => "permgroup"}.to_json);
+                settings.setup_step = "permgroup";
               else
                 ws.send({:type => "switch_step", :step => "dbsetup"}.to_json);
                 settings.setup_step = "dbsetup";
@@ -116,16 +156,34 @@ get "/" do
           rescue => e
             ws.send({:type => "step_data", :step => "step1", :error => stringify_error(e)}.to_json)
           end
-        when "step2"
-          
+        when "permgroup"
+          case dat["action"]
+          when "update_node"
+            pg = PermissionGroup[dat["id"]]
+            pg.set_permission(dat["node"], dat["permitted"])
+            puts "updated permission node '#{dat["node"]}' for '#{PermissionGroup[dat["id"]].name}'"
+            puts "  value: " + pg.get_permission(dat["node"]).to_s
+            ws.send({:type => "permgroup_ack", :pg => dat["id"]}.to_json)
+          when "submit"
+            ws.send({:type => "switch_step", :step => "createadmin"}.to_json)
+            settings.setup_step = "createadmin"
+          end
         when "dbsetup"
           begin
             Sequel::Migrator.run(DB, "migrations")
+            require_relative "./models.rb"
+            loaded_models = true
+            send_permission_groups ws
+
             ws.send({:type => "step_data", :step => "dbsetup", :content => "\nDone!", :finished => true}.to_json)
-            settings.setup_step = "step2"
+            settings.setup_step = "permgroup"
           rescue => e
             ws.send({:type => "step_data", :step => "dbsetup", :error => stringify_error(e)}.to_json)
           end
+        when "createadmin"
+          puts "got oauth redirect request"
+          url = settings.oauth2_client.auth_code.authorize_url(:redirect_uri => redirect_uri, :scope => SCOPE, :access_type => :online, :approval_prompt => :auto, :state => "")
+          ws.send({:type => "step_data", :step => "createadmin", :oauth_redirect => url}.to_json)
         end
       end
     end
@@ -133,4 +191,19 @@ get "/" do
   else
     haml :setup
   end
+end
+
+get "/oauth2/callback" do
+  token = settings.oauth2_client.auth_code.get_token(params[:code], :redirect_uri => redirect_uri)
+  userinfo = JSON.parse(token.get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json").body)
+
+  user = User[:google_id => session[:google_id]]
+  if user == nil then
+    user = User.create(:google_id => session[:google_id])
+    puts "Creating superuser '#{userinfo["name"]}'"
+  else
+    puts "Promoting existing user '#{userinfo["name"]}' to superuser status"
+  end
+  user.permission_group = PermissionGroup[:internal_id => "superusers"]
+  haml :setup_complete
 end
