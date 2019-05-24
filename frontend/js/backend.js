@@ -64,4 +64,12 @@ export class BackendInterface {
       return Photo.fromJson(this, json.photo);
     });
   }
+
+  importPhotosFromImgurFavorites(user, imgurUsername) {
+    return this.rq.post("/api/user/" + user.id + "/photo/import/imgur/favorites/", {username: imgurUsername}).then((json) => {
+      return Promise.all(json.photos.map((photo) => {
+        return Photo.fromJson(this, photo);
+      }));
+    });
+  }
 }

@@ -28,7 +28,7 @@ export class User {
 }
 
 export class Photo {
-  constructor(iface, id, owner, provider, providerId, fullresUrl, thumbnailUrl, isVideo) {
+  constructor(iface, id, owner, provider, providerId, fullresUrl, thumbnailUrl, isVideo, importDate) {
     this.iface = iface;
     this.id = id;
     this.owner = owner;
@@ -37,6 +37,7 @@ export class Photo {
     this.fullresUrl = fullresUrl;
     this.thumbnailUrl = thumbnailUrl;
     this.isVideo = isVideo;
+    this.importDate = importDate;
     knownPhotos[id] = this;
   }
 
@@ -54,7 +55,7 @@ export class Photo {
 
   static fromJson(iface, photo) {
     return User.byId(photo.user).then((user) => {
-      return new Photo(iface, photo.id, user, photo.provider, photo.provider_id, photo.fullres_url, photo.thumbnail_url, photo.is_video);
+      return new Photo(iface, photo.id, user, photo.provider, photo.provider_id, photo.fullres_url, photo.thumbnail_url, photo.is_video, new Date(photo.import_date));
     });
   }
 }

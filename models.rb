@@ -34,7 +34,8 @@ class Photo < Sequel::Model
       :provider_id => provider_id,
       :fullres_url => fullres_url,
       :is_video => is_video,
-      :thumbnail_url => thumbnail_url
+      :thumbnail_url => thumbnail_url,
+      :import_date => import_date
     }
   end
   

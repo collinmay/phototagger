@@ -1,24 +1,30 @@
 %html
   =haml :bootstrap_crud
+  %link{:rel => "stylesheet", :href => "https://fonts.googleapis.com/icon?family=Material+Icons"}
   %link{:rel => "stylesheet", :href => "/gallery.css"}
   %script{:type => "text/javascript"}= "var currentState = " + JSON.generate(js_state)
   %script{:src => "/bundle.js", :type => "text/javascript"}
   %title
     Gallery
   %nav.navbar-custom
-    -#%span#view-title
-      Gallery
     %div.navmode-container
       %div.navmode.active#gallery-navmode
         %span
           Gallery
+        .flexglue
+        %i.iconbutton.material-icons.md-white#gallery-bar-import-button
+          file_upload
       %div.navmode#photo-navmode
         %a.iconbutton#photo-inspector-bar-gallery-button{:href => "/app/round/"}
-          %img{:src => "/ic_collections_white_24px.svg"}
+          %i.material-icons.md-white
+            collections
         %span
           Photo
         .flexglue
-        %img.iconbutton#photo-inspector-bar-delete-button{:src => "/ic_delete_white_24px.svg"}
+        %i.iconbutton#photo-inspector-bar-delete-button.material-icons.md-white
+          delete
+    .profile-container
+      %img.circular{:src => session[:google_picture]}
   .body
     #photo-inspector-tab.tab
       #photo-inspector-fullsize-centerbox
@@ -31,3 +37,41 @@
         This should never show.
       #snackbar-option
         ?!?!
+  #dialog-container.hidden
+    #dialog-transitioner
+      .dialog.hidden#import-dialog
+        .dialog-title
+          Import Photos
+        #import-dialog-body
+          .card#import-dialog-imgur-card
+            %img{:src => "/imgur_material_full.svg"}
+          .card#import-dialog-gphotos-card
+            %img{:src => "/gphotos_material.svg"}
+          .card#import-dialog-upload-card
+            %i.material-icons
+              file_upload
+          .card#import-dialog-hotlink-card
+            %i.material-icons
+              link
+        .dialog-actions
+          .dialog-action#import-dialog-cancel-button
+            Cancel
+      .dialog.hidden#imgur-import-dialog
+        .dialog-title
+          Import From Imgur
+        %table
+          %tr
+            %td
+              %input{:type => "radio", :name => "imgur-import-type"}
+            %td
+              %input{:placeholder => "username"}
+          %tr
+            %td
+              %input{:type => "radio", :name => "imgur-import-type"}
+            %td
+              %input{:placeholder => "url"}
+        .dialog-actions
+          .dialog-action#imgur-import-dialog-cancel-button
+            Cancel
+          .dialog-action#imgur-import-dialog-import-button
+            Import

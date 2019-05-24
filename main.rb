@@ -126,6 +126,10 @@ class TaggerApp < Sinatra::Base
     end
 
     def import_imgur_image(user, image)
+      if !grant.grants_import_imgur_photo?(user) then
+        raise AccessDeniedError.new(grant, user, "not allowed to create imgur image for specified user")
+      end
+      
       photo = Photo.create(:provider => "imgur", :is_video => image["animated"])
       imgur_photo = ImgurPhoto.create(
         :imgur_id => image["id"],
@@ -138,11 +142,31 @@ class TaggerApp < Sinatra::Base
     end
 
     def import_imgur_album(user, album)
-      album["images"].each do |image|
+      album["images"].map do |image|
         import_imgur_image(user, image)
       end
     end
 
+    def import_imgur_favorites(user, username)
+      json = settings.imgur_conn.get("/3/account/#{Faraday::Utils.escape(username)}/gallery_favorites").body
+      if !json["success"] then
+        raise json["data"]["error"]
+      end
+      
+      return json["data"].reduce([]) do |photos, entity|
+        if entity["is_album"] then
+          json2 = settings.imgur_conn.get("/3/album/#{entity["id"]}").body
+          if !json2["success"] then
+            raise json["data"]["error"]
+          end
+          photos.concat(import_imgur_album(user, json2["data"]))
+        else
+          photos.push(import_imgur_image(user, entity))
+        end
+        next photos
+      end
+    end
+    
     def import_gphoto(user, image)
       photo = Photo.create(:provider => "gphotos", :is_video => image.fullsize.medium == "video")
       google_photo = GooglePhoto.create(

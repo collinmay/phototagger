@@ -22,6 +22,32 @@ class TaggerApp < Sinatra::Base
      end}.to_json
   end
 
+  post "/api/user/:user/photo/import/imgur/favorites/" do
+    content_type :json
+
+    request.body.rewind
+    data = JSON.parse request.body.read
+    valid_keys = ["username"]
+    if data.keys.sort == valid_keys.sort then
+      next {
+        :status => :success,
+        :owner => user.id,
+        :photos => import_imgur_favorites(grant.protect(user), data["username"]).map do |photo|
+          photo.to_hash
+        end}.to_json
+    else
+      status 400
+      next {
+        :status => :error,
+        :reason => "malformed_request",
+        :model_type => "photo",
+        :malformation => "extra_keys",
+        :extra_keys => (data.keys - valid_keys),
+        :message => "Malformed request: imgur favorites import job contains extra keys."
+      }.to_json
+    end
+  end
+  
   post "/api/user/:user/photo/" do
     content_type :json
     

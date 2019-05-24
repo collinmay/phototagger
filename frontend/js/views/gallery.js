@@ -13,8 +13,12 @@ let newImage = (src) => {
 };
 
 export class GalleryView {
-  constructor(asm, photos) {
-    let container = document.getElementById("gallery-grid");
+  constructor(asm) {
+    this.asm = asm;
+    this.container = document.getElementById("gallery-grid");
+    this.photos = [];
+  }
+  appendPhotos(photos) {
     let domTrees = [];
     for(let i = 0; i < photos.length; i++) {
       let photoContainer = document.createElement("div");
@@ -34,10 +38,10 @@ export class GalleryView {
       photoGrowbox.appendChild(photoIconbox);
       photoGrowbox.appendChild(photoCenterbox);
       photoContainer.appendChild(photoGrowbox);
-      container.appendChild(photoContainer);
+      this.container.appendChild(photoContainer);
 
       photoGrowbox.addEventListener("click", (evt) => {
-        asm.transitionState({
+        this.asm.transitionState({
           view: "photo",
           photoId: photos[i].id
         });
@@ -46,8 +50,13 @@ export class GalleryView {
       domTrees[i] = {
         photoGrowbox, photoCenterbox
       };
+
+      this.photos.push({
+        photo: photos[i], photoContainer, photoGrowbox, photoCenterbox
+      });
     }
-    
+
+    let self = this;
     co(function*() {
       for(let i = 0; i < Math.min(photos.length, 20); i++) {
         let photo = photos[i];
@@ -63,9 +72,20 @@ export class GalleryView {
         
         yield delay(1);
       }
+
+      self.sortPhotosByDateImported();
     });
   }
 
+  sortPhotosByDateImported() {
+    this.photos.sort((a, b) => {
+      return a.photo.importDate - b.photo.importDate
+    });
+    for(let i = 0; i < this.photos.length; i++) {
+      this.photos[i].photoContainer.style.order = i;
+    };
+  }
+  
   warpState(state) {
     // do nothing
   }
