@@ -14,6 +14,14 @@
           %td
             Google ID
           %td
+            Permission Group
+          %td
+            Info
+          %td
+            Delete
+          %td
+            Errors
+
       %tbody
         -users.each do |user|
           %tr{:class => user.id == highlight_id ? "highlight" : nil}
@@ -22,8 +30,17 @@
             %td
               =user.google_id
             %td
+              %a{:href => "/app/debug/dump/pgroup/#{user.permission_group.id}/?highlight_id=#{user.id}"}
+                =user.permission_group.name
+            %td
               %a{:href => "/app/debug/dump/user/#{user.id}/"}
                 More Info
+            %td
+              %a{:href => "/app/debug/delete/user/#{user.id}"}
+                Delete
+            %td
+              -user.valid?
+              =(user.valid? && "") || user.errors.to_a.first.join(" ")
     %a{:href => "?min=#{min-range}&max=#{min}"}
       Previous
     %a{:href => "?min=#{max}&max=#{max+range}"}

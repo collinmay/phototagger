@@ -14,7 +14,15 @@
     %p
       %a{:href => "/app/debug/db/inspections/users?min=#{(user.id/20).floor*20}&max=#{(user.id/20).floor*20+20}&highlight=#{user.id}"}
         Show in inspection
-
+    %p
+      Permission group:
+      =user.permission_group.name
+    %p
+      Permissions:
+      %ul
+        -user.permission_group.permissions.each do |permission|
+          %li
+            =permission.permission_node + ": " + permission.permitted.to_s
     %p
       Owned Photos:
     %table

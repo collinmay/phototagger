@@ -197,13 +197,14 @@ get "/oauth2/callback" do
   token = settings.oauth2_client.auth_code.get_token(params[:code], :redirect_uri => redirect_uri)
   userinfo = JSON.parse(token.get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json").body)
 
-  user = User[:google_id => session[:google_id]]
+  user = User[:google_id => userinfo["id"]]
   if user == nil then
-    user = User.create(:google_id => session[:google_id])
+    user = User.create(:google_id => userinfo["id"])
     puts "Creating superuser '#{userinfo["name"]}'"
   else
     puts "Promoting existing user '#{userinfo["name"]}' to superuser status"
   end
   user.permission_group = PermissionGroup[:internal_id => "superusers"]
+  user.save
   haml :setup_complete
 end

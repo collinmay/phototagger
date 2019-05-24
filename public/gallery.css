@@ -49,6 +49,16 @@
     padding-right: 10px;
 }
 
+.circular {
+    border-radius: 50%;
+    height: 100%;
+}
+
+.profile-container {
+    height: 40px;
+    margin: -15px 0;
+}
+
 .fixed-bottom {
     position: fixed;
     bottom: 0;

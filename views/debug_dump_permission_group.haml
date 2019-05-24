@@ -1,0 +1,50 @@
+%html
+  %head
+    %title
+      DEBUG: Permission Group #
+      =pg.id
+    %link{:href => "https://xenotoad.net/css/tables.css", :rel => "stylesheet", :type => "text/css"}
+  %body
+    %h1
+      Permission Group #
+      =pg.id
+    %p
+      %a{:href => "/app/debug/"}
+        Main Debug Menu
+    %p
+      %a{:href => "/app/debug/db/inspections/pgroups?min=#{(pg.id/20).floor*20}&max=#{(pg.id/20).floor*20+20}&highlight=#{pg.id}"}
+        Show in inspection
+    %p
+      Name:
+      =pg.name
+    %p
+      Permissions:
+      %ul
+        -pg.permissions.each do |permission|
+          %li
+            =permission.permission_node + ": " + permission.permitted.to_s
+    %p
+      Users:
+    %table
+      %thead
+        %tr
+          %td
+            User ID
+          %td
+            Google ID
+          %td
+            Permission Group
+          %td
+      %tbody
+        -pg.users.each do |user|
+          %tr{:class => user.id == highlight_id ? "highlight" : nil}
+            %td
+              =user.id
+            %td
+              =user.google_id
+            %td
+              %a{:href => "/app/debug/dump/pgroup/#{user.permission_group.id}"}
+                =user.permission_group.name
+            %td
+              %a{:href => "/app/debug/dump/user/#{user.id}/"}
+                More Info

@@ -7,13 +7,15 @@ class NoDefaultUserGrantedError < StandardError
 end
 
 class AccessDeniedError < StandardError
-  def initialize(grant, object)
+  def initialize(grant, object, message)
     @grant = grant
     @object = object
+    @message = message
   end
 
   attr_reader :grant
   attr_reader :object
+  attr_reader :message
 end
 
 class NoSuchObjectExistsError < StandardError

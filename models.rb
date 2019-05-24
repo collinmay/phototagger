@@ -4,6 +4,14 @@ require_relative "utils.rb"
 class User < Sequel::Model
   one_to_many :tags
   one_to_many :photos
+  many_to_one :permission_group
+
+  def validate
+    super
+    if !google_id || google_id.length < 2 then
+      errors.add(:google_id, "cannot be empty")
+    end
+  end
 end
 User.unrestrict_primary_key
 
@@ -166,7 +174,8 @@ end
 
 class PermissionGroup < Sequel::Model
   one_to_many :permissions
-
+  one_to_many :users
+  
   def get_permission(node)
     return permissions_dataset[:permission_node => node]
   end
@@ -178,5 +187,10 @@ class PermissionGroup < Sequel::Model
     p.permitted = permitted
     p.save
     return p
+  end
+
+  def has_permission(node)
+    prm = get_permission(node)
+    return prm && prm.permitted
   end
 end

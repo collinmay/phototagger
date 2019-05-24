@@ -10,13 +10,19 @@ class TaggerApp < Sinatra::Base
     haml :debug_dump_user_info, :locals => {:user => user}
   end
 
-  get "/app/debug/dump/photo/:photo/" do |photo_id|
-    photo = Photo[:id => photo_id]
-    if photo == nil then
-      next "no such photo '#{photo_id}'"
+  get "/app/debug/dump/photo/:photo_id/" do |photo_id|
+    haml :debug_dump_photo_info, :locals => {:photo => photo}
+  end
+
+  get "/app/debug/dump/pgroup/:pgroup/" do |pgroup|
+    pg = PermissionGroup[:id => pgroup]
+    if pg == nil then
+      next "no such permission group '#{pgroup}'"
     end
 
-    haml :debug_dump_photo_info, :locals => {:photo => photo}
+    highlight = (params[:highlight_id] || 0).to_i
+    
+    haml :debug_dump_permission_group, :locals => {:pg => pg, :highlight_id => highlight}
   end
   
   get "/app/debug/import/gphotos/multi" do
@@ -93,14 +99,13 @@ class TaggerApp < Sinatra::Base
     next "succ cess"
   end
   
-  get "/app/debug/delete/photo/:photo_id" do |photo_id|
-    photo = Photo[:id => photo_id.to_s]
-    if !photo then
-      next "no such photo with id #{photo_id}"
-    end
-
+  get "/app/debug/delete/photo/:photo_id" do
     photo.destroy
-
+    redirect back
+  end
+  
+  get "/app/debug/delete/user/:user" do
+    user.destroy
     redirect back
   end
   
@@ -182,6 +187,12 @@ class TaggerApp < Sinatra::Base
     ImgurPhoto.all do |iphoto|
       if iphoto.error_check.length > 0 then
         iphoto.destroy
+      end
+    end
+
+    User.all do |user|
+      if !user.valid? then
+        user.destroy
       end
     end
 

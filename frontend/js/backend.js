@@ -33,7 +33,10 @@ export class BackendInterface {
   }
   
   whoami() {
-    return this.rq.get("/api/whoami").then((json) => {
+    if(this.user) {
+      return this.user;
+    }
+    return this.user = this.rq.get("/api/whoami").then((json) => {
       return new User(this, json.id, json.google_id, json.grant_type);
     });
   }
