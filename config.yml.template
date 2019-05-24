@@ -1,0 +1,13 @@
+development: &common_settings
+  google_client_id: ""
+  google_client_secret: ""
+  imgur_api_client: ""
+  imgur_api_secret: ""
+  db_path: "mysql2://username:password@host/database"
+  allow_hotlinking: true
+  allow_uploads: true
+test:
+  <<: *common_settings
+  db_path: "mysql2://username:password@host/test_database"
+production:
+  <<: *common_settings
